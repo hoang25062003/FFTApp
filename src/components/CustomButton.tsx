@@ -1,8 +1,11 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
+// Sửa: Thay vì import trực tiếp từ 'react-native-vector-icons/FontAwesome', 
+// chúng ta import từ '@expo/vector-icons' để đảm bảo phông chữ được tải trong môi trường Expo.
+import { FontAwesome } from '@expo/vector-icons';
+
 import { ButtonProps } from '../types';
 import { Colors } from '../constants/Colors';
-import Icon from 'react-native-vector-icons/FontAwesome';
 
 const CustomButton: React.FC<ButtonProps> = ({
   title,
@@ -11,7 +14,7 @@ const CustomButton: React.FC<ButtonProps> = ({
   textStyle,
   variant,
   disabled,
-  children, // ✅ Cho phép thêm ActivityIndicator, icon...
+  children,
 }) => {
   const getStyles = () => {
     switch (variant) {
@@ -38,7 +41,8 @@ const CustomButton: React.FC<ButtonProps> = ({
         disabled={disabled}
       >
         <View style={styles.googleContent}>
-          <Icon name="google" size={20} color={Colors.textPrimary} style={styles.googleIcon} />
+          {/* Sửa: Thay thế Icon bằng FontAwesome */}
+          <FontAwesome name="google" size={20} color={Colors.textPrimary} style={styles.googleIcon} />
           <Text style={[textStyleDefault, textStyle]}>{title}</Text>
         </View>
       </TouchableOpacity>
@@ -65,7 +69,7 @@ const CustomButton: React.FC<ButtonProps> = ({
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
         <Text style={[textStyleDefault, textStyle]}>{title}</Text>
-        {children} {/* ✅ Cho phép hiển thị ActivityIndicator hoặc icon */}
+        {!!children && children}
       </View>
     </TouchableOpacity>
   );

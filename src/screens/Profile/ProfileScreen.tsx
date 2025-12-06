@@ -1,291 +1,436 @@
-// src/screens/Profile/ProfileScreen.tsx
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  TextInput,
-  StatusBar,
-  SafeAreaView,
+    View,
+    Text,
+    ScrollView,
+    Image,
+    TouchableOpacity,
+    TextInput,
+    ActivityIndicator,
+    Alert,
+    Dimensions,
+    ImageBackground,
+    RefreshControl,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import ProfileHeader from '../../components/ProfileHeader';
-import ProfileStat from '../../components/ProfileStat';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import { useNavigation, useIsFocused, CommonActions } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { API_BASE_URL } from '@env';
+
+// ✅ Xóa AsyncStorage import vì Service đã lo rồi
+// import AsyncStorage from '@react-native-async-storage/async-storage'; 
+
+import HeaderApp from '../../components/HeaderApp';
 import RecipeCard from '../../components/RecipeCard';
-import { useNavigation } from '@react-navigation/native'; // Để điều hướng khi có nút quay lại
+import Pagination from '../../components/Pagination';
 
-const ProfileScreen: React.FC = () => {
-  const navigation = useNavigation();
+import UserService, { UserProfile, getGenderDisplay } from '../../services/UserService';
+import RecipeService, { Recipe } from '../../services/RecipeService';
+import AuthService from '../../services/AuthService'; // ✅ Import AuthService
+import { ProfileStackParamList } from '../../navigation/ProfileStackNavigator';
 
-  // Dữ liệu "cứng" giống ảnh
-  const userData = {
-    name: 'Robin Jonnson',
-    age: 26,
-    gender: 'Nam',
-    height: '165 cm',
-    weight: '50.5 kg',
-    email: 'robin_johnson@aar.com',
-    address: 'Thạch Hộc, Thạch Thất, Hà Nội',
-    phoneNumber: '0988 888 888',
-    status: 'Chưa xác minh',
-    avatarLarge: 'https://randomuser.me/api/portraits/men/32.jpg', // Ảnh đại diện lớn
-  };
+import { localStyles, BRAND_COLOR_EXPORT } from './ProfileScreenStyles'; 
 
-  const recipes = [
-    { id: '1', title: 'Canh chua cá lóc', views: 120, image: 'https://via.placeholder.com/150/FF5733/FFFFFF?text=CanhChua' },
-    { id: '2', title: 'Thịt kho trứng', views: 200, image: 'https://via.placeholder.com/150/C70039/FFFFFF?text=ThitKho' },
-    { id: '3', title: 'Gỏi cuốn', views: 85, image: 'https://via.placeholder.com/150/900C3F/FFFFFF?text=GoiCuon' },
-    { id: '4', title: 'Phở bò', views: 300, image: 'https://via.placeholder.com/150/581845/FFFFFF?text=PhoBo' },
-    { id: '5', title: 'Cà ri gà cay', views: 150, image: 'https://via.placeholder.com/150/FFC300/FFFFFF?text=CaRiGa' },
-    { id: '6', title: 'Cà ri gà cay', views: 150, image: 'https://via.placeholder.com/150/DAF7A6/FFFFFF?text=CaRiGa' },
-  ];
+type ProfileNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
-  const handleBackPress = () => {
-    navigation.goBack(); // Quay lại màn hình trước
-  };
+const { width } = Dimensions.get('window');
+const BRAND_COLOR = BRAND_COLOR_EXPORT; 
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <ProfileHeader onBackPress={handleBackPress} />
-
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <Image source={{ uri: userData.avatarLarge }} style={styles.profileAvatar} />
-          <Text style={styles.profileName}>{userData.name}</Text>
-          <View style={styles.starRating}>
-            {[...Array(5)].map((_, i) => (
-              <Icon
-                key={i}
-                name={i < 4 ? 'star' : 'star-outline'} // 4 sao vàng, 1 sao viền
-                size={20}
-                color={i < 4 ? '#FFD700' : '#ccc'}
-                style={{ marginHorizontal: 2 }}
-              />
-            ))}
-          </View>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Tuổi:</Text>
-            <Text style={styles.infoValue}>{userData.age}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Giới tính:</Text>
-            <Text style={styles.infoValue}>{userData.gender}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Chiều cao:</Text>
-            <Text style={styles.infoValue}>{userData.height}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Cân nặng:</Text>
-            <Text style={styles.infoValue}>{userData.weight}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email:</Text>
-            <Text style={styles.infoValue}>{userData.email}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Địa chỉ:</Text>
-            <Text style={styles.infoValue}>{userData.address}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Sđt:</Text>
-            <Text style={styles.infoValue}>{userData.phoneNumber}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Trạng thái:</Text>
-            <Text style={styles.infoValueStatus}>{userData.status}</Text>
-          </View>
-
-          {/* Stats Bar */}
-          <View style={styles.statsBar}>
-            <ProfileStat value={1200} label="Following" />
-            <ProfileStat value={1200} label="Follower" />
-          </View>
-
-          {/* Action Button */}
-          <TouchableOpacity style={styles.followButton}>
-            <Text style={styles.followButtonText}>Chỉnh sửa</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Recipes Section */}
-        <View style={styles.recipesSection}>
-          <Text style={styles.recipesSectionTitle}>Công thức đã đăng</Text>
-          <View style={styles.recipesHeaderActions}>
-            <View style={styles.searchContainer}>
-              <Icon name="magnify" size={20} color="#888" style={styles.searchIcon} />
-              <TextInput
-                placeholder="Tìm công thức..."
-                style={styles.searchInput}
-                placeholderTextColor="#888"
-              />
-            </View>
-            <TouchableOpacity style={styles.createRecipeButton}>
-              <Text style={styles.createRecipeButtonText}>Tạo công thức</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.recipesGrid}>
-            {recipes.map((recipe) => (
-              <RecipeCard
-                key={recipe.id}
-                imageUri={recipe.image}
-                title={recipe.title}
-                views={recipe.views}
-                // isPrivate={true} // Bật nếu muốn hiển thị icon khóa
-                onPress={() => console.log('View recipe:', recipe.title)}
-              />
-            ))}
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+const initialUserData: UserProfile = {
+    id: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    gender: 'Male',
+    avatarUrl: null,
+    dateOfBirth: null,
+    followersCount: 0,
+    followingCount: 0,
+    isFollowing: false,
+    address: null,
+    bio: null,
 };
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#f0f2f5', // Màu nền hơi xám
-  },
-  profileCard: {
-    backgroundColor: '#fff',
-    margin: 15,
-    borderRadius: 15,
-    padding: 20,
-    alignItems: 'center',
-    elevation: 3, // Android shadow
-    shadowColor: '#000', // iOS shadow
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-  },
-  profileAvatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    marginBottom: 10,
-    borderWidth: 2,
-    borderColor: '#eee',
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 5,
-  },
-  starRating: {
-    flexDirection: 'row',
-    marginBottom: 20,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingVertical: 5,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#eee',
-  },
-  infoLabel: {
-    fontSize: 15,
-    color: '#555',
-    fontWeight: '500',
-    flex: 1,
-  },
-  infoValue: {
-    fontSize: 15,
-    color: '#333',
-    flex: 2,
-    textAlign: 'right',
-  },
-  infoValueStatus: {
-    fontSize: 15,
-    color: '#FF6347', // Màu đỏ cam cho "Chưa xác minh"
-    flex: 2,
-    textAlign: 'right',
-    fontWeight: 'bold',
-  },
-  statsBar: {
-    flexDirection: 'row',
-    width: '100%',
-    marginTop: 20,
-    marginBottom: 15,
-    justifyContent: 'space-between',
-  },
-  followButton: {
-    backgroundColor: '#8BC34A', // Màu xanh lá cây
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: 25,
-    width: '80%',
-    alignItems: 'center',
-  },
-  followButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  recipesSection: {
-    padding: 15,
-    backgroundColor: '#fff',
-    marginTop: 15,
-  },
-  recipesSectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 15,
-  },
-  recipesHeaderActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 15,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f2f5',
-    borderRadius: 25,
-    paddingHorizontal: 15,
-    flex: 1,
-    marginRight: 10,
-    height: 40,
-  },
-  searchIcon: {
-    marginRight: 5,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#333',
-  },
-  createRecipeButton: {
-    backgroundColor: '#FF69B4', // Màu hồng
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 25,
-  },
-  createRecipeButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  recipesGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between', // Đảm bảo các thẻ trải đều
-  },
-});
+interface InfoRowProps {
+    iconName: string;
+    label: string;
+    value: string;
+    isLink?: boolean;
+}
+
+const InfoRow: React.FC<InfoRowProps> = ({ iconName, label, value, isLink = false }) => (
+    <View style={localStyles.infoRow}>
+        <View style={localStyles.infoIconContainer}>
+            <MaterialIcon name={iconName} size={22} color={BRAND_COLOR} />
+        </View>
+        <View style={localStyles.infoContent}>
+            <Text style={localStyles.infoLabel}>{label}</Text>
+            <Text
+                style={[localStyles.infoValue, isLink && { color: BRAND_COLOR }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+            >
+                {value}
+            </Text>
+        </View>
+    </View>
+);
+
+const formatDateToVN = (dateString: string | null | undefined): string => {
+    if (!dateString) return 'Chưa cập nhật';
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+    return dateString;
+};
+
+const getFullImageUrl = (url: string | null) => {
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('file://')) {
+        return url;
+    }
+    return `${API_BASE_URL}${url}`;
+};
+
+const ProfileScreen: React.FC = () => {
+    const navigation = useNavigation<ProfileNavigationProp>();
+    const isFocused = useIsFocused();
+    
+    // States
+    const [userData, setUserData] = useState<UserProfile>(initialUserData);
+    const [isLoading, setIsLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Recipe States
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [pageSize, setPageSize] = useState(10);
+    const [totalRecipes, setTotalRecipes] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
+
+    const fetchUserProfile = useCallback(async () => {
+        try {
+            const profile = await UserService.getUserProfile();
+            setUserData(profile);
+            setError(null);
+        } catch (err) {
+            console.error('API Error:', err);
+            setError('Không thể tải hồ sơ');
+        }
+    }, []);
+
+    const fetchRecipes = useCallback(async () => {
+        setIsLoadingRecipes(true);
+        try {
+            const response = await RecipeService.getMyRecipes({
+                page: currentPage,
+                pageSize: pageSize,
+                title: searchQuery || undefined,
+            });
+            if (response && response.items) {
+                setRecipes(response.items);
+                setTotalRecipes(response.totalCount || 0);
+            } else {
+                setRecipes([]);
+                setTotalRecipes(0);
+            }
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setIsLoadingRecipes(false);
+        }
+    }, [currentPage, pageSize, searchQuery]);
+
+    useEffect(() => {
+        const loadData = async () => {
+            setIsLoading(true);
+            await Promise.all([fetchUserProfile(), fetchRecipes()]);
+            setIsLoading(false);
+        };
+        loadData();
+    }, []); 
+
+    useEffect(() => {
+        if (isFocused && !isLoading) {
+            fetchUserProfile();
+        }
+    }, [isFocused]);
+
+    useEffect(() => {
+        if (!isLoading) {
+            fetchRecipes();
+        }
+    }, [currentPage, pageSize, searchQuery]);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await Promise.all([fetchUserProfile(), fetchRecipes()]);
+        setRefreshing(false);
+    };
+
+    const handleBackPress = () => navigation.goBack();
+    const handlePageChange = (page: number) => setCurrentPage(page);
+    const handlePageSizeChange = (size: number) => { setPageSize(size); setCurrentPage(1); };
+    const handleSearch = (text: string) => { setSearchQuery(text); setCurrentPage(1); };
+    const handleEditProfile = () => navigation.navigate('EditProfile');
+    const handleViewRecipe = (recipeId: string) => navigation.navigate('ViewRecipe', { recipeId });
+
+    // ✅ CẬP NHẬT LOGIC ĐĂNG XUẤT SỬ DỤNG SERVICE
+    const performLogout = async () => {
+        try {
+            // 1. Gọi hàm logout từ AuthService
+            // Hàm này đã bao gồm: Gọi API logout (nếu có) + Xóa AsyncStorage (TokenManager.clearAll)
+            await AuthService.logout(); 
+            
+            // 2. Reset navigation stack và chuyển về Login
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'AuthFlow' }], // Đảm bảo 'Auth' là tên đúng trong AppNavigator của bạn
+                })
+            );
+        } catch (error) {
+            console.error("Logout Error:", error);
+            // Dù lỗi API hay gì thì vẫn nên xóa token local và đẩy về login
+            await AuthService.TokenManager.clearAll(); 
+            navigation.dispatch(
+                CommonActions.reset({
+                    index: 0,
+                    routes: [{ name: 'AuthFlow' }],
+                })
+            );
+        }
+    };
+
+    const handleLogout = () => {
+        Alert.alert(
+            "Đăng xuất",
+            "Bạn có chắc chắn muốn đăng xuất?",
+            [
+                { text: "Hủy", style: "cancel" },
+                { 
+                    text: "Đăng xuất", 
+                    style: "destructive", 
+                    onPress: performLogout 
+                }
+            ]
+        );
+    };
+
+    if (isLoading) {
+        return (
+            <SafeAreaView style={localStyles.centerContainer}>
+                <ActivityIndicator size="large" color={BRAND_COLOR} />
+            </SafeAreaView>
+        );
+    }
+
+    if (error) {
+        return (
+            <SafeAreaView style={localStyles.centerContainer}>
+                <Text style={{ color: 'red', marginBottom: 10 }}>{error}</Text>
+                <TouchableOpacity onPress={fetchUserProfile} style={localStyles.retryButton}>
+                    <Text style={{ color: '#fff' }}>Thử lại</Text>
+                </TouchableOpacity>
+            </SafeAreaView>
+        );
+    }
+
+    const fullName = `${userData.firstName} ${userData.lastName}`.trim() || 'Người dùng';
+    const addressDisplay = userData.address || 'Chưa cập nhật';
+    const bioDisplay = userData.bio || 'Chưa có tiểu sử giới thiệu bản thân.';
+    const birthDateDisplay = formatDateToVN(userData.dateOfBirth);
+    const totalPages = Math.ceil(totalRecipes / pageSize);
+    const finalAvatarUrl = getFullImageUrl(userData.avatarUrl);
+
+    return (
+        <View style={localStyles.container}>
+            <HeaderApp isHome={false} onBackPress={handleBackPress} />
+
+            <ScrollView 
+                showsVerticalScrollIndicator={false} 
+                contentContainerStyle={{ paddingBottom: 40 }}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND_COLOR]} />
+                }
+            >
+                
+                <View style={localStyles.headerSection}>
+                    <ImageBackground 
+                        source={require('../../assets/images/background.jpg')}
+                        style={localStyles.gradientBg}
+                        resizeMode="cover"
+                    >
+                        <View style={localStyles.patternOverlay} />
+                    </ImageBackground>
+                    
+                    <View style={localStyles.profileHeader}>
+                        <View style={localStyles.avatarSection}>
+                            <View style={localStyles.avatarWrapper}>
+                                {finalAvatarUrl ? (
+                                    <Image 
+                                        source={{ uri: finalAvatarUrl }} 
+                                        style={localStyles.avatarImage} 
+                                    />
+                                ) : (
+                                    <View style={localStyles.avatarPlaceholder}>
+                                        <MaterialIcon name="account" size={50} color="#FFFFFF" />
+                                    </View>
+                                )}
+                                <TouchableOpacity style={localStyles.editAvatarBadge} onPress={handleEditProfile}>
+                                    <MaterialIcon name="camera" size={16} color="#fff" />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={localStyles.profileInfo}>
+                            <Text style={localStyles.profileName}>{fullName}</Text>
+                            <Text style={localStyles.profileBio}>{bioDisplay}</Text>
+                        </View>
+                    </View>
+
+                    <View style={localStyles.statsCard}>
+                        <View style={localStyles.statItem}>
+                            <View style={localStyles.statIconBg}>
+                                <MaterialIcon name="account-multiple" size={20} color={BRAND_COLOR} />
+                            </View>
+                            <Text style={localStyles.statValue}>{userData.followersCount}</Text>
+                            <Text style={localStyles.statLabel}>Followers</Text>
+                        </View>
+                        
+                        <View style={localStyles.statDivider} />
+                        
+                        <View style={localStyles.statItem}>
+                            <View style={localStyles.statIconBg}>
+                                <MaterialIcon name="account-heart" size={20} color={BRAND_COLOR} />
+                            </View>
+                            <Text style={localStyles.statValue}>{userData.followingCount}</Text>
+                            <Text style={localStyles.statLabel}>Following</Text>
+                        </View>
+                        
+                        <View style={localStyles.statDivider} />
+                        
+                        <View style={localStyles.statItem}>
+                            <View style={localStyles.statIconBg}>
+                                <MaterialIcon name="star" size={20} color="#FFB800" />
+                            </View>
+                            <Text style={localStyles.statValue}>4.5</Text>
+                            <Text style={localStyles.statLabel}>Rating</Text>
+                        </View>
+                    </View>
+
+                    <View style={localStyles.actionButtonsContainer}>
+                        <TouchableOpacity style={localStyles.editButton} onPress={handleEditProfile}>
+                            <MaterialIcon name="pencil" size={20} color="#FFFFFF" />
+                            <Text style={localStyles.editButtonText}>Chỉnh sửa</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity style={localStyles.shareButton}>
+                            <MaterialIcon name="share-variant" size={20} color={BRAND_COLOR} />
+                            <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity style={localStyles.logoutButton} onPress={handleLogout}>
+                            <MaterialIcon name="logout" size={20} color="#FF5252" />
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                <View style={localStyles.contentSection}>
+                    <View style={localStyles.infoCard}>
+                        <View style={localStyles.cardHeader}>
+                            <MaterialIcon name="information" size={24} color={BRAND_COLOR} />
+                            <Text style={localStyles.cardTitle}>Thông tin cá nhân</Text>
+                        </View>
+                        
+                        <InfoRow iconName="calendar" label="Ngày sinh" value={birthDateDisplay} />
+                        <InfoRow iconName="gender-male-female" label="Giới tính" value={getGenderDisplay(userData.gender)} />
+                        <InfoRow iconName="email" label="Email" value={userData.email} isLink />
+                        <InfoRow iconName="map-marker" label="Địa chỉ" value={addressDisplay} />
+                    </View>
+
+                    <View style={localStyles.recipeSection}>
+                        <View style={localStyles.recipeSectionHeader}>
+                            <View style={localStyles.recipeTitleContainer}>
+                                <MaterialIcon name="book-open-variant" size={24} color={BRAND_COLOR} />
+                                <Text style={localStyles.recipeSectionTitle}>Công thức của tôi</Text>
+                                <View style={localStyles.recipeBadge}>
+                                    <Text style={localStyles.recipeBadgeText}>{totalRecipes}</Text>
+                                </View>
+                            </View>
+                        </View>
+                        
+                        <View style={localStyles.searchBarContainer}>
+                            <Ionicons name="search" size={20} color="#9CA3AF" />
+                            <TextInput
+                                placeholder="Tìm kiếm công thức..."
+                                style={localStyles.searchInput}
+                                placeholderTextColor="#9CA3AF"
+                                value={searchQuery}
+                                onChangeText={handleSearch}
+                            />
+                            {searchQuery.length > 0 && (
+                                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                    <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        {isLoadingRecipes ? (
+                            <ActivityIndicator size="small" color={BRAND_COLOR} style={{ marginVertical: 30 }} />
+                        ) : recipes.length === 0 ? (
+                            <View style={localStyles.emptyState}>
+                                <View style={localStyles.emptyIconContainer}>
+                                    <MaterialIcon name="chef-hat" size={60} color="#E5E7EB" />
+                                </View>
+                                <Text style={localStyles.emptyStateTitle}>
+                                    {searchQuery ? 'Không tìm thấy kết quả' : 'Chưa có công thức nào'}
+                                </Text>
+                                <Text style={localStyles.emptyStateText}>
+                                    {searchQuery ? 'Thử tìm kiếm với từ khóa khác' : 'Hãy bắt đầu chia sẻ công thức của bạn'}
+                                </Text>
+                            </View>
+                        ) : (
+                            <>
+                                <View style={localStyles.recipesGrid}>
+                                    {recipes.map((recipe) => (
+                                        <RecipeCard
+                                            key={recipe.id}
+                                            imageUri={recipe.imageUrl || 'https://via.placeholder.com/150'} 
+                                            title={recipe.name || 'Không có tiêu đề'}
+                                            cookTime={recipe.cookTime || 0}
+                                            ration={recipe.ration || 0}
+                                            difficulty={recipe.difficulty?.value || 'EASY'}
+                                            isPrivate={recipe.status === 'PRIVATE'}
+                                            onPress={() => handleViewRecipe(recipe.id)}
+                                        />
+                                    ))}
+                                </View>
+                                {totalRecipes > 0 && (
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        pageSize={pageSize}
+                                        totalItems={totalRecipes}
+                                        onPageChange={handlePageChange}
+                                        onPageSizeChange={handlePageSizeChange}
+                                        pageSizeOptions={[6, 10, 20]}
+                                        showPageSizeSelector={true}
+                                    />
+                                )}
+                            </>
+                        )}
+                    </View>
+                </View>
+
+            </ScrollView>
+        </View>
+    );
+};
 
 export default ProfileScreen;

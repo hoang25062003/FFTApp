@@ -1,44 +1,63 @@
+// FILE: src/navigation/NavigationTypes.ts
+
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { AuthRoutes } from './RouteNames'; // Lấy tên các routes từ file đã tạo
-import {  AppRoutes } from './RouteNames';
-/**
- * 1. Định nghĩa ParamList cho Auth Stack
- * Đây là bản đồ ánh xạ tên Route (Key) với các tham số (Value) nó nhận.
- * Nếu Route không nhận tham số, giá trị là 'undefined'.
- */
+import { AuthRoutes } from './RouteNames'; 
+
+// --- AUTH STACK PARAM LIST ---
 export type AuthStackParamList = {
-    // AuthRoutes.Login sẽ là 'LoginScreen'
     [AuthRoutes.Login]: undefined; 
-    
-    // AuthRoutes.Register sẽ là 'RegisterScreen'
     [AuthRoutes.Register]: undefined; 
-    VerifyEmailOtp: { email: string };
-    [AppRoutes.Home]: undefined; 
-    [AppRoutes.Profile]: undefined;
-    // Ví dụ: Nếu bạn có màn hình quên mật khẩu nhận tham số:
-    // ForgotPasswordScreen: { email?: string };
+    [AuthRoutes.VerifyEmailOtp]: { email: string };
+    [AuthRoutes.ForgotPassword]: undefined;
+    [AuthRoutes.VerifyCode]: { email: string };
+    [AuthRoutes.NewPassword]: undefined;
 };
 
+// --- ROOT STACK PARAM LIST ---
+export type RootStackParamList = {
+    AuthFlow: undefined; 
+    MainAppTabs: undefined;
+    CreateRecipe: undefined; // ✅ THÊM DÒNG NÀY
+    ViewDietRestriction: undefined;
+};
 
-/**
- * 2. Tạo Type cho Props của từng màn hình
- * Type này giúp định nghĩa chính xác các props (navigation và route) 
- * mà mỗi component màn hình trong Auth Stack sẽ nhận.
- * * @template T - Tên Route (Ví dụ: 'LoginScreen' hoặc 'RegisterScreen')
- */
-export type AuthScreenProps<T extends keyof AuthStackParamList> = 
-  NativeStackScreenProps<AuthStackParamList, T>;
-  
-  
-/**
- * 3. Type cụ thể cho màn hình Đăng ký
- * Type này sẽ được sử dụng trực tiếp trong RegisterScreen.tsx
- */
-export type RegisterScreenNavigationProps = AuthScreenProps<typeof AuthRoutes.Register>;
+// --- PROFILE STACK PARAM LIST ---
+export type ProfileStackParamList = {
+    ProfileMain: undefined;
+    EditProfile: undefined;
+};
 
-/**
- * 4. Type cụ thể cho màn hình Đăng nhập
- */
-export type LoginScreenNavigationProps = AuthScreenProps<typeof AuthRoutes.Login>;
-export type VerifyEmailOtpScreenNavigationProps = AuthScreenProps<'VerifyEmailOtp'>;
-export type HomeScreenNavigationProps = AuthScreenProps<typeof AppRoutes.Home>;
+// --- HEALTH GOAL STACK PARAM LIST ---
+export type HealthGoalStackParamList = {
+    HealthGoalMain: undefined;
+    HealthGoalCreate: undefined;
+};
+export type ScanlStackParamList = {
+    ScanMain: undefined;   // Màn hình chính (Danh sách)
+    ScanResult: undefined; // Màn hình tạo mới
+};
+export type HealthMetricStackParamList = {
+    ViewHealthMetricMain: undefined;
+    CreateHealthMetric: undefined;
+    EditHealthMetric: undefined;
+};
+export type DietRestrictionStackParamList = {
+    ViewDietRestrictionMain: undefined;
+    CreateDietRestriction: undefined;
+};
+// --- AUTH SCREEN TYPES ---
+export type LoginScreenNavigationProps = NativeStackScreenProps<AuthStackParamList, typeof AuthRoutes.Login>;
+export type RegisterScreenNavigationProps = NativeStackScreenProps<AuthStackParamList, typeof AuthRoutes.Register>;
+export type VerifyEmailOtpScreenNavigationProps = NativeStackScreenProps<AuthStackParamList, typeof AuthRoutes.VerifyEmailOtp>;
+export type ForgotPasswordScreenNavigationProps = NativeStackScreenProps<AuthStackParamList, typeof AuthRoutes.ForgotPassword>;
+export type VerifyCodeScreenNavigationProps = NativeStackScreenProps<AuthStackParamList, typeof AuthRoutes.VerifyCode>;
+export type NewPasswordScreenNavigationProps = NativeStackScreenProps<AuthStackParamList, typeof AuthRoutes.NewPassword>;
+
+// --- TAB PARAM LIST ---
+export type TabParamList = {
+    Home: undefined;
+    Goal: undefined;
+    Scan: undefined;
+    Health: undefined;
+    Profile: undefined;
+};

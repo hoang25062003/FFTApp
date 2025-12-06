@@ -1,318 +1,367 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   ScrollView,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
   Image,
+  Alert,
+  ActivityIndicator,
+  StatusBar,
+  Platform,
+  SafeAreaView
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation } from '@react-navigation/native';
 
-// Khối nhập liệu tiêu chuẩn
-const InputBlock: React.FC<{ label: string; placeholder: string; unit?: string; value: string; onChangeText: (text: string) => void }> = ({
-  label,
-  placeholder,
-  unit,
-  value,
-  onChangeText,
-}) => (
-  <View style={styles.inputBlock}>
-    <Text style={styles.inputLabel}>{label}</Text>
-    <View style={styles.inputFieldContainer}>
-      <TextInput
-        style={styles.inputField}
-        placeholder={placeholder}
-        value={value}
-        onChangeText={onChangeText}
-        keyboardType={label.includes('Số điện thoại') || label.includes('Tuổi') || label.includes('Chiều cao') || label.includes('Cân nặng') ? 'numeric' : 'default'}
-      />
-      {unit && <Text style={styles.unitText}>{unit}</Text>}
-    </View>
-  </View>
-);
+import Icon from 'react-native-vector-icons/Ionicons';
+import * as ImagePicker from 'expo-image-picker';
+import { useNavigation } from '@react-navigation/native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+
+import UserService from '../../services/UserService';
+import { ApiException } from '../../services/AuthService';
+import { styles } from './EditProfileScreenStyles';
+import HeaderApp from '../../components/HeaderApp';
+
+type InputField = 'firstName' | 'lastName' | 'dateOfBirth' | 'address' | 'bio' | null;
 
 const EditProfileScreen: React.FC = () => {
   const navigation = useNavigation();
-  
-  // Dữ liệu giả lập
-  const [firstName, setFirstName] = useState('Robin');
-  const [lastName, setLastName] = useState('Jonnson');
-  const [email, setEmail] = useState('robin.jonnson@example.com');
-  const [phone, setPhone] = useState('0912345678');
-  const [address, setAddress] = useState('123 Main St, Anytown');
-  const [gender, setGender] = useState('Nam');
-  const [age, setAge] = useState('30');
-  const [height, setHeight] = useState('175');
-  const [weight, setWeight] = useState('70');
+  const BRAND_COLOR = '#8BC34A';
 
-  const handleSaveChanges = () => {
-    // Logic lưu thay đổi (API call)
-    console.log('Đã lưu thay đổi hồ sơ!');
-    // Sau khi lưu, có thể quay lại màn hình trước
-    navigation.goBack(); 
+  // State
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+
+  const [dateOfBirth, setDateOfBirth] = useState('');
+  const [address, setAddress] = useState('');
+  const [gender, setGender] = useState<'Male' | 'Female' | null>(null);
+  const [bio, setBio] = useState('');
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [dateObject, setDateObject] = useState(new Date());
+
+  const [focusedInput, setFocusedInput] = useState<InputField>(null);
+
+  useEffect(() => {
+    loadUserProfile();
+  }, []);
+
+  // --- Handlers ---
+  const handleBackPress = () => {
+    navigation.goBack();
   };
 
+  const handleFocus = (inputName: InputField) => {
+    setFocusedInput(inputName);
+  };
+
+  const handleBlur = () => {
+    setFocusedInput(null);
+  };
+
+  // --- Helpers & Load Data ---
+  const formatDateForDisplay = (isoString: string): string => {
+    if (!isoString) return '';
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return isoString;
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  };
+
+  const normalizeGender = (rawGender: string | null | undefined): 'Male' | 'Female' | null => {
+    if (!rawGender) return null;
+    const lower = rawGender.toLowerCase();
+    if (lower === 'female') return 'Female';
+    if (lower === 'male') return 'Male';
+    return null;
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      const profile = await UserService.getUserProfile();
+      setAvatar(profile.avatarUrl || null);
+      setFirstName(profile.firstName || '');
+      setLastName(profile.lastName || '');
+      setEmail(profile.email || '');
+      if (profile.dateOfBirth) {
+        const parsedDate = new Date(profile.dateOfBirth);
+        if (!isNaN(parsedDate.getTime())) {
+          setDateObject(parsedDate);
+          setDateOfBirth(formatDateForDisplay(profile.dateOfBirth));
+        } else {
+          setDateOfBirth(profile.dateOfBirth);
+        }
+      }
+      setAddress(profile.address || '');
+      const normalized = normalizeGender(profile.gender);
+      setGender(normalized || 'Male');
+      setBio(profile.bio || '');
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+      Alert.alert('Lỗi', 'Không thể tải thông tin hồ sơ');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePickImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Quyền bị từ chối', 'Cần quyền truy cập thư viện ảnh');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets?.[0]?.uri) {
+        setAvatar(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+    }
+  };
+
+  const onDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selectedDate) {
+      setDateObject(selectedDate);
+      const day = selectedDate.getDate().toString().padStart(2, '0');
+      const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
+      const year = selectedDate.getFullYear();
+      setDateOfBirth(`${day}/${month}/${year}`);
+    }
+    handleBlur(); 
+  };
+
+  const handleSave = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      Alert.alert('Lỗi', 'Họ và tên không được để trống');
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const formData = new FormData();
+      formData.append('firstName', firstName.trim());
+      formData.append('lastName', lastName.trim());
+      if (dateOfBirth) {
+        const parts = dateOfBirth.split('/');
+        if (parts.length === 3) {
+          formData.append('dateOfBirth', `${parts[2]}-${parts[1]}-${parts[0]}`);
+        } else {
+          formData.append('dateOfBirth', dateOfBirth);
+        }
+      }
+      if (address) formData.append('address', address.trim());
+      if (gender) formData.append('gender', gender);
+      if (bio) formData.append('bio', bio.trim());
+      if (avatar && !avatar.startsWith('http')) {
+        const filename = avatar.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename || '');
+        const type = match ? `image/${match[1]}` : 'image/jpeg';
+        formData.append('avatar', {
+          uri: avatar,
+          name: filename || 'avatar.jpg',
+          type: type,
+        } as any);
+      }
+      await UserService.updateUserProfile(formData as any);
+      Alert.alert('Thành công', 'Đã cập nhật hồ sơ', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      const message = error instanceof ApiException ? error.message : 'Không thể cập nhật hồ sơ';
+      Alert.alert('Lỗi', message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#8BC34A" />
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
-      {/* Header/Close button */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Edit profile</Text>
-        <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
-          <Icon name="close" size={24} color="#333" />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.container} >
+      {/* 1. HEADER APP ĐÃ CẬP NHẬT onBackPress */}
+      <HeaderApp 
+        isHome={false} 
+        onBackPress={handleBackPress} 
+      />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        {/* Profile Image Section */}
-        <View style={styles.profileImageContainer}>
-          <View style={styles.imageWrapper}>
-             <Image 
-                source={{ uri: 'https://placehold.co/100x100/A5D6A7/000000?text=R+J' }} // Placeholder ảnh đại diện
-                style={styles.profileImage}
-            />
-          </View>
-          <View style={styles.imageTextContainer}>
-            <Text style={styles.uploadImageText}>Tải ảnh của bạn lên</Text>
-            <Text style={styles.uploadImageHint}>Ảnh của bạn phải có định dạng PNG hoặc JPG.</Text>
-            <TouchableOpacity style={styles.chooseImageButton}>
-              <Text style={styles.chooseImageButtonText}>Chọn ảnh đại diện</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        
+        {/* 2. PHẦN BODY MỞ ĐẦU */}
+        <View style={styles.greenHeaderSection}>
+          <View style={styles.greenHeaderBackground}>
+            {/* Họa tiết trang trí */}
+            <View style={styles.decorativeCircle1} />
+            <View style={styles.decorativeCircle2} />
 
-        {/* Basic Info */}
-        <View style={styles.infoRow}>
-          <InputBlock label="Họ" placeholder="Nhập họ..." value={firstName} onChangeText={setFirstName} />
-          <InputBlock label="Tên" placeholder="Nhập tên..." value={lastName} onChangeText={setLastName} />
-        </View>
-
-        <InputBlock label="Email" placeholder="Nhập email..." value={email} onChangeText={setEmail} />
-        <InputBlock label="Số điện thoại" placeholder="Nhập SĐT..." value={phone} onChangeText={setPhone} />
-        <InputBlock label="Địa chỉ cụ thể" placeholder="Nhập địa chỉ..." value={address} onChangeText={setAddress} />
-
-        {/* Gender and Age */}
-        <View style={styles.infoRow}>
-          <View style={styles.inputBlock}>
-            <Text style={styles.inputLabel}>Giới tính</Text>
-            <View style={styles.radioGroup}>
-                <TouchableOpacity 
-                    style={[styles.radioOption, gender === 'Nữ' && styles.radioActive]}
-                    onPress={() => setGender('Nữ')}
-                >
-                    <Text style={[styles.radioText, gender === 'Nữ' && styles.radioTextActive]}>Nữ</Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                    style={[styles.radioOption, gender === 'Nam' && styles.radioActive]}
-                    onPress={() => setGender('Nam')}
-                >
-                    <Text style={[styles.radioText, gender === 'Nam' && styles.radioTextActive]}>Nam</Text>
-                </TouchableOpacity>
+            <View style={styles.greenHeaderContent}>
+              <View>
+                <Text style={styles.headerSubtitle}>Cập nhật thông tin</Text>
+                <Text style={styles.headerTitle}>Hồ Sơ Cá Nhân</Text>
+              </View>
             </View>
           </View>
-          <InputBlock label="Tuổi" placeholder="Nhập tuổi" value={age} onChangeText={setAge} />
         </View>
 
-        {/* Height and Weight */}
-        <View style={styles.infoRow}>
-          <InputBlock label="Chiều cao" placeholder="0" unit="cm" value={height} onChangeText={setHeight} />
-          <InputBlock label="Cân nặng" placeholder="0" unit="kg" value={weight} onChangeText={setWeight} />
+        {/* 3. AVATAR */}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarWrapper}>
+            {avatar ? (
+              <Image source={{ uri: avatar }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarPlaceholder]}>
+                <Icon name="person" size={50} color="#BDBDBD" />
+              </View>
+            )}
+            <TouchableOpacity style={styles.cameraButton} onPress={handlePickImage}>
+               <Icon name="camera" size={20} color="#fff" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.avatarTextContainer}>
+            <Text style={styles.avatarHint}>Chạm vào máy ảnh để thay đổi</Text>
+          </View>
         </View>
-        
-        {/* Padding cuối cùng */}
+
+        {/* Form Fields */}
+        <View style={styles.formSection}>
+          <View style={styles.row}>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Họ</Text>
+              <TextInput
+                style={[styles.input, focusedInput === 'firstName' && styles.inputFocused]}
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="Nhập họ"
+                onFocus={() => handleFocus('firstName')}
+                onBlur={handleBlur}
+              />
+            </View>
+            <View style={styles.halfInput}>
+              <Text style={styles.label}>Tên</Text>
+              <TextInput
+                style={[styles.input, focusedInput === 'lastName' && styles.inputFocused]}
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Nhập tên"
+                onFocus={() => handleFocus('lastName')}
+                onBlur={handleBlur}
+              />
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput
+              style={[styles.input, styles.disabledInput]}
+              value={email}
+              editable={false}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Ngày sinh</Text>
+            <TouchableOpacity 
+              onPress={() => { setShowDatePicker(true); handleFocus('dateOfBirth'); }} 
+              activeOpacity={1}
+            >
+              <View style={[styles.dateInputWrapper, focusedInput === 'dateOfBirth' && styles.dateInputWrapperFocused]}>
+                <TextInput
+                  style={styles.dateInput}
+                  value={dateOfBirth}
+                  placeholder="DD/MM/YYYY"
+                  editable={false}
+                  pointerEvents="none"
+                />
+                <Icon name="calendar-outline" size={22} color={focusedInput === 'dateOfBirth' ? '#1A1A1A' : '#6B7280'} style={styles.dateIcon} />
+              </View>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={dateObject}
+                mode="date"
+                display="default"
+                onChange={onDateChange}
+                maximumDate={new Date()}
+              />
+            )}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Địa chỉ</Text>
+            <TextInput
+              style={[styles.input, focusedInput === 'address' && styles.inputFocused]}
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Nhập địa chỉ"
+              onFocus={() => handleFocus('address')}
+              onBlur={handleBlur}
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Giới tính</Text>
+            <View style={styles.genderContainer}>
+              <TouchableOpacity
+                style={[styles.genderButton, gender === 'Female' && styles.genderButtonActive]}
+                onPress={() => setGender('Female')}
+              >
+                <Text style={[styles.genderButtonText, gender === 'Female' && styles.genderButtonTextActive]}>Nữ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.genderButton, gender === 'Male' && styles.genderButtonActive]}
+                onPress={() => setGender('Male')}
+              >
+                <Text style={[styles.genderButtonText, gender === 'Male' && styles.genderButtonTextActive]}>Nam</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Giới thiệu</Text>
+            <TextInput
+              style={[styles.input, styles.bioInput, focusedInput === 'bio' && styles.bioInputFocused]}
+              value={bio}
+              onChangeText={setBio}
+              placeholder="Viết vài dòng về bản thân..."
+              multiline
+              textAlignVertical="top"
+              onFocus={() => handleFocus('bio')}
+              onBlur={handleBlur}
+            />
+          </View>
+        </View>
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Footer Buttons */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()} disabled={isSaving}>
           <Text style={styles.cancelButtonText}>Hủy</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSaveChanges}>
-          <Text style={styles.saveButtonText}>Lưu thay đổi</Text>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={isSaving}>
+          {isSaving ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Lưu thay đổi</Text>}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#eee',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 30, // Căn chỉnh tương đối với nút đóng
-  },
-  closeButton: {
-    padding: 5,
-  },
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  profileImageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 30,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f2f5',
-  },
-  imageWrapper: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    overflow: 'hidden',
-    marginRight: 20,
-    borderWidth: 2,
-    borderColor: '#8BC34A',
-  },
-  profileImage: {
-    width: '100%',
-    height: '100%',
-  },
-  imageTextContainer: {
-    flex: 1,
-  },
-  uploadImageText: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '600',
-  },
-  uploadImageHint: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 8,
-  },
-  chooseImageButton: {
-    borderWidth: 1,
-    borderColor: '#8BC34A',
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    alignSelf: 'flex-start',
-  },
-  chooseImageButtonText: {
-    color: '#8BC34A',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  inputBlock: {
-    flex: 1,
-    marginRight: 10,
-  },
-
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#555',
-    marginBottom: 5,
-  },
-  inputFieldContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f0f2f5',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#eee',
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-  },
-  inputField: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-    height: 40,
-  },
-  unitText: {
-    fontSize: 16,
-    color: '#888',
-    marginLeft: 5,
-  },
-  radioGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 40,
-    marginTop: 5,
-  },
-  radioOption: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-    backgroundColor: '#eee',
-  },
-  radioActive: {
-    backgroundColor: '#8BC34A',
-  },
-  radioText: {
-    color: '#555',
-    fontWeight: '500',
-  },
-  radioTextActive: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-    borderTopWidth: 0.5,
-    borderTopColor: '#eee',
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-  },
-  cancelButton: {
-    backgroundColor: '#ccc',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  cancelButtonText: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  saveButton: {
-    backgroundColor: '#8BC34A',
-    paddingVertical: 10,
-    paddingHorizontal: 25,
-    borderRadius: 25,
-  },
-  saveButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
 
 export default EditProfileScreen;

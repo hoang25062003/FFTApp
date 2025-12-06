@@ -1,10 +1,10 @@
-export type GenderType = 'Male' | 'Female' ;
+export type GenderType = 'Male' | 'Female' | 'Other'; // ĐÃ THÊM 'Other'
 export interface RegisterPayload {
     firstName: string;
     lastName: string;
     email: string;
     password: string;
-    // rePassword là trường chỉ dùng trong UI, không gửi lên API
+    rePassword: string;
     phoneNumber: string;
     
     // CÁC TRƯỜNG MỚI THEO YÊU CẦU BACKEND (image_dd205e.png)

@@ -8,16 +8,15 @@ export const GlobalStyles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingTop: 50,
   },
-  // Style cho header, ví dụ: logo và text chào mừng
   headerContainer: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 30,
   },
   logo: {
-    width: 200, // Điều chỉnh kích thước tùy theo asset thực tế
-    height: 100, // Điều chỉnh kích thước
+    width: 250, // Điều chỉnh kích thước tùy theo asset thực tế
+    height: 125, // Điều chỉnh kích thước
     resizeMode: 'contain',
-    marginBottom: 20,
+    marginBottom: 10,
   },
   welcomeText: {
     fontSize: 24,

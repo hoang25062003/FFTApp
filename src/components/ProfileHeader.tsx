@@ -21,15 +21,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({
       </TouchableOpacity>
       <Text style={styles.headerTitle}>Hồ sơ cá nhân</Text>
       <View style={styles.rightIcons}>
-        <TouchableOpacity onPress={onNotificationsPress} style={styles.iconButton}>
-          <Icon name="bell-outline" size={24} color="#333" />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={onAvatarPress} style={styles.avatarButton}>
-          <Image
-            source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }} // Ảnh đại diện nhỏ
-            style={styles.smallAvatar}
-          />
-        </TouchableOpacity>
       </View>
     </View>
   );

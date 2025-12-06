@@ -1,13 +1,9 @@
 import React, { useState } from 'react';
-import { TextInput, View, StyleSheet, TouchableOpacity, Text } from 'react-native';
-// GIẢ ĐỊNH: Định nghĩa InputProps được đặt trong '../types'
-// interface InputProps extends TextInputProps { ... }
-// Tuy nhiên, tôi sẽ thêm trực tiếp type cho iconRight ở đây để đảm bảo code hoạt động độc lập.
-import { Colors } from '../constants/Colors'; // <-- Đã sửa đường dẫn import
+import { TextInput, View, StyleSheet, TouchableOpacity, Text, Modal } from 'react-native';
+import { Colors } from '../constants/Colors';
 import Icon from 'react-native-vector-icons/Ionicons'; 
-import { ReactNode } from 'react'; // Import ReactNode cho prop iconRight
+import { ReactNode } from 'react';
 
-// GIẢ ĐỊNH: Định nghĩa InputProps
 interface InputProps extends Omit<React.ComponentProps<typeof TextInput>, 'style'> {
     placeholder?: string;
     value?: string;
@@ -15,14 +11,15 @@ interface InputProps extends Omit<React.ComponentProps<typeof TextInput>, 'style
     keyboardType?: 'default' | 'numeric' | 'email-address' | 'phone-pad';
     secureTextEntry?: boolean;
     isPassword?: boolean;
-    // Bổ sung prop mới: iconRight
     iconRight?: ReactNode;
-    // Bổ sung prop style để hỗ trợ tùy chỉnh container
     style?: any; 
-    editable?: boolean; // THÊM PROP NÀY VÀO INPUT PROPS
-    maxLength?: number; // Thêm prop này để tránh lỗi trong VerifyScreen
+    editable?: boolean;
+    maxLength?: number;
+    // Props mới cho dropdown
+    isDropdown?: boolean;
+    dropdownOptions?: string[];
+    onSelectOption?: (option: string) => void;
 }
-
 
 const CustomInput: React.FC<InputProps> = ({
     placeholder,
@@ -31,18 +28,21 @@ const CustomInput: React.FC<InputProps> = ({
     keyboardType = 'default',
     secureTextEntry = false,
     isPassword = false,
-    iconRight, // Thêm prop iconRight
-    style, // Nhận style tùy chỉnh cho container
-    editable = true, // Đặt mặc định là true
+    iconRight,
+    style,
+    editable = true,
+    isDropdown = false,
+    dropdownOptions = [],
+    onSelectOption,
     ...rest
 }) => {
     const [isSecure, setIsSecure] = useState(secureTextEntry);
+    const [showDropdown, setShowDropdown] = useState(false);
 
     // Xác định icon sẽ hiển thị
     let rightIcon = null;
 
     if (isPassword) {
-        // 1. Icon cho trường Mật khẩu (Eye/Eye-off)
         rightIcon = (
             <TouchableOpacity
                 style={styles.rightIconWrapper}
@@ -55,8 +55,17 @@ const CustomInput: React.FC<InputProps> = ({
                 />
             </TouchableOpacity>
         );
+    } else if (isDropdown) {
+        rightIcon = (
+            <View style={styles.rightIconWrapper}>
+                <Icon
+                    name="chevron-down"
+                    size={20}
+                    color={Colors.textSecondary}
+                />
+            </View>
+        );
     } else if (iconRight) {
-        // 2. Icon tùy chỉnh (như Calendar)
         rightIcon = (
             <View style={styles.rightIconWrapper}>
                 {iconRight}
@@ -64,9 +73,71 @@ const CustomInput: React.FC<InputProps> = ({
         );
     }
 
+    const handleDropdownPress = () => {
+        if (isDropdown) {
+            setShowDropdown(true);
+        }
+    };
 
+    const handleSelectOption = (option: string) => {
+        if (onSelectOption) {
+            onSelectOption(option);
+        }
+        setShowDropdown(false);
+    };
+
+    // Nếu là dropdown, render như một TouchableOpacity
+    if (isDropdown) {
+        return (
+            <>
+                <TouchableOpacity 
+                    style={[styles.container, style]}
+                    onPress={handleDropdownPress}
+                    activeOpacity={0.7}
+                >
+                    <Text style={value ? styles.selectedText : styles.placeholderText}>
+                        {value || placeholder}
+                    </Text>
+                    {rightIcon}
+                </TouchableOpacity>
+
+                <Modal
+                    visible={showDropdown}
+                    transparent={true}
+                    animationType="fade"
+                    onRequestClose={() => setShowDropdown(false)}
+                >
+                    <TouchableOpacity 
+                        style={styles.modalOverlay}
+                        activeOpacity={1}
+                        onPress={() => setShowDropdown(false)}
+                    >
+                        <View style={styles.modalContent}>
+                            <Text style={styles.modalTitle}>{placeholder}</Text>
+                            {dropdownOptions.map((option, index) => (
+                                <TouchableOpacity
+                                    key={index}
+                                    style={[
+                                        styles.modalOption,
+                                        index === dropdownOptions.length - 1 && styles.lastOption
+                                    ]}
+                                    onPress={() => handleSelectOption(option)}
+                                >
+                                    <Text style={styles.modalOptionText}>{option}</Text>
+                                    {value === option && (
+                                        <Icon name="checkmark" size={20} color="#8BC34A" />
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </TouchableOpacity>
+                </Modal>
+            </>
+        );
+    }
+
+    // Render bình thường cho TextInput
     return (
-        // Áp dụng style truyền vào cho container
         <View style={[styles.container, style]}>
             <TextInput
                 style={styles.input}
@@ -76,17 +147,13 @@ const CustomInput: React.FC<InputProps> = ({
                 keyboardType={keyboardType}
                 secureTextEntry={isSecure}
                 placeholderTextColor={Colors.textSecondary}
-                editable={editable} // SỬ DỤNG PROP EDITABLE
+                editable={editable}
                 {...rest}
             />
-            {/* Hiển thị icon đã xác định */}
-            {rightIcon}
+            {!!rightIcon && rightIcon}
         </View>
     );
 };
-
-// GIẢ ĐỊNH: Định nghĩa Colors (ĐÃ XÓA VÌ CÓ FILE CONSTANTS/COLORS.TS)
-
 
 const styles = StyleSheet.create({
     container: {
@@ -101,15 +168,60 @@ const styles = StyleSheet.create({
         backgroundColor: Colors.white,
     },
     input: {
-        flex: 1, // Đảm bảo input chiếm hết không gian còn lại
+        flex: 1,
         fontSize: 16,
         color: Colors.textPrimary,
     },
-    // Style chung cho biểu tượng bên phải (mắt hoặc lịch)
     rightIconWrapper: {
         paddingLeft: 10,
         justifyContent: 'center',
         height: '100%',
+    },
+    // Styles cho dropdown
+    selectedText: {
+        flex: 1,
+        fontSize: 16,
+        color: Colors.textPrimary,
+    },
+    placeholderText: {
+        flex: 1,
+        fontSize: 16,
+        color: Colors.textSecondary,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContent: {
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 20,
+        width: '80%',
+        maxWidth: 300,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 15,
+        textAlign: 'center',
+    },
+    modalOption: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingVertical: 15,
+        borderBottomWidth: 1,
+        borderBottomColor: '#f0f0f0',
+    },
+    lastOption: {
+        borderBottomWidth: 0,
+    },
+    modalOptionText: {
+        fontSize: 16,
+        color: '#333',
     },
 });
 

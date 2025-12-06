@@ -1,13 +1,12 @@
 import { Alert } from 'react-native';
-import { RegisterPayload, GenderType } from '../services/types/index';
+// Đảm bảo RegisterPayload đã được import chính xác từ nơi bạn đã sửa
+import { RegisterPayload } from '../services/AuthService'; 
 
 /**
  * Các hàm kiểm tra tính hợp lệ cho từng trường
  */
 
-// Hàm kiểm tra Email cơ bản
 const isValidEmail = (email: string): boolean => {
-    // Regex cơ bản, có thể phức tạp hơn tùy yêu cầu
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 };
@@ -17,27 +16,20 @@ const isValidPassword = (password: string): boolean => {
     return password.length >= 8;
 };
 
-// Hàm kiểm tra Số điện thoại (ví dụ: chỉ chứa số và tối thiểu 9 số)
-const isValidPhoneNumber = (phone: string): boolean => {
-    const phoneRegex = /^\d{9,}$/;
-    return phoneRegex.test(phone.replace(/\s/g, '')); // Loại bỏ khoảng trắng
-};
 
 // Hàm kiểm tra Ngày sinh (ví dụ: định dạng YYYY-MM-DD)
 const isValidDateOfBirth = (dob: string): boolean => {
-    // Regex kiểm tra định dạng YYYY-MM-DD
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     if (!dateRegex.test(dob)) return false;
 
-    // Kiểm tra tính hợp lệ của ngày tháng (ví dụ: không phải 2024-99-99)
     const date = new Date(dob);
     // Kiểm tra nếu date là ngày hợp lệ VÀ chuỗi ngày sinh khớp với ngày được tạo
     return !isNaN(date.getTime()) && date.toISOString().startsWith(dob);
 };
 
 // Hàm kiểm tra Giới tính (phải là Male hoặc Female)
-const isValidGender = (gender: string): boolean => {
-    return (gender === 'Male' || gender === 'Female');
+const isValidGender = (gender: RegisterPayload['gender']): boolean => {
+    return (gender === 'Male' || gender === 'Female'); 
 };
 
 
@@ -48,43 +40,49 @@ const isValidGender = (gender: string): boolean => {
 export const useRegisterValidation = () => {
     
     // Hàm tổng hợp để validate toàn bộ dữ liệu
-    const validateRegisterForm = (payload: RegisterPayload, confirmPassword: string): boolean => {
+    const validateRegisterForm = (payload: RegisterPayload, rePassword: string): boolean => {
         let errors: string[] = [];
 
         // 1. Kiểm tra trường bắt buộc
-        if (!payload.firstName || !payload.lastName || !payload.email || !payload.password || !confirmPassword || !payload.phoneNumber || !payload.dateOfBirth || !payload.gender) {
-            errors.push('Vui lòng điền đầy đủ tất cả thông tin bắt buộc.');
+        // ⭐ ĐÃ SỬA: Bỏ kiểm tra phoneNumber. Do gender không là null trong type, ta cũng không cần kiểm tra nó ở đây nữa.
+        if (!payload.firstName || !payload.lastName || !payload.email || !payload.password || !payload.rePassword || !payload.dateOfBirth) {
+             errors.push('Vui lòng điền đầy đủ tất cả thông tin bắt buộc.');
+        }
+
+        // --- Nếu có lỗi cơ bản, ta dừng lại ---
+        if (errors.length > 0) {
+            Alert.alert('Lỗi Dữ Liệu', errors.join('\n'));
+            return false;
         }
 
         // 2. Kiểm tra Mật khẩu và Xác nhận Mật khẩu
-        if (payload.password !== confirmPassword) {
+        if (payload.password !== payload.rePassword) {
             errors.push('Mật khẩu và Xác nhận Mật khẩu không khớp.');
         }
         if (!isValidPassword(payload.password)) {
             errors.push('Mật khẩu phải có ít nhất 8 ký tự.');
         }
-
+        
         // 3. Kiểm tra Email
-        if (payload.email && !isValidEmail(payload.email)) {
+        if (!isValidEmail(payload.email)) { // Không cần kiểm tra tồn tại vì đã kiểm tra ở bước 1
             errors.push('Địa chỉ Email không hợp lệ.');
         }
         
-        // 4. Kiểm tra Số điện thoại
-        if (payload.phoneNumber && !isValidPhoneNumber(payload.phoneNumber)) {
-            errors.push('Số điện thoại không hợp lệ (ít nhất 9 chữ số).');
-        }
-
-        // 5. Kiểm tra Ngày sinh
-        if (payload.dateOfBirth && !isValidDateOfBirth(payload.dateOfBirth)) {
+        // 4. Kiểm tra Ngày sinh
+        if (!isValidDateOfBirth(payload.dateOfBirth)) { // Không cần kiểm tra tồn tại vì đã kiểm tra ở bước 1
             errors.push('Ngày sinh không hợp lệ. Vui lòng sử dụng định dạng YYYY-MM-DD.');
         }
 
-        // 6. Kiểm tra Giới tính
-        if (payload.gender && !isValidGender(payload.gender as GenderType)) {
+        // 5. Kiểm tra Giới tính
+        // Do type đã được siết chặt là Male | Female, ta chỉ cần gọi hàm kiểm tra.
+        // Tuy nhiên, nếu bạn tin tưởng đầu vào từ RegisterScreen, bước này có thể không cần thiết.
+        if (!isValidGender(payload.gender)) {
+            // ⭐ ĐÃ SỬA: Cập nhật thông báo lỗi, bỏ "Other"
             errors.push('Giới tính không hợp lệ. Chỉ chấp nhận "Male" hoặc "Female".');
         }
 
-        // Xử lý lỗi
+
+        // Xử lý lỗi cuối cùng
         if (errors.length > 0) {
             Alert.alert('Lỗi Dữ Liệu', errors.join('\n'));
             return false;

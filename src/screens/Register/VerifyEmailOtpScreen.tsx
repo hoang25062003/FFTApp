@@ -1,76 +1,38 @@
 // FILE: src/screens/VerifyEmailOtp/VerifyEmailOtpScreen.tsx
 
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
+// 👈 THÊM Image
+import { View, Text, StyleSheet, Alert, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native'; 
 
-import CustomInput from '../../components/CustomInput'; // Giả định
-import CustomButton from '../../components/CustomButton'; // Giả định
-import HeaderLogo from '../../components/Header'; // Giả định
-import { AuthRoutes, AppRoutes } from '../../navigation/RouteNames'; // Giả định các route
-import { VerifyEmailOtpScreenNavigationProps } from '../../navigation/NavigationTypes'; // Giả định type
-import { Colors } from '../../constants/Colors'; // Giả định Colors
+import CustomInput from '../../components/CustomInput'; 
+import CustomButton from '../../components/CustomButton'; 
+// import HeaderLogo from '../../components/Header'; // 👈 BỎ IMPORT NÀY
+import { AuthRoutes, AppRoutes } from '../../navigation/RouteNames'; 
+import { VerifyEmailOtpScreenNavigationProps } from '../../navigation/NavigationTypes'; 
+// import { Colors } from '../../constants/Colors'; // Bỏ import không dùng
+import styles from './VerifyEmailOtpScreenStyles'; 
 
 // Import các hàm API
 import { verifyEmailOtp, resendOtp } from '../../services/AuthService'; 
 
-// --- GIAO DIỆN MÀN HÌNH ---
-// Note: Bạn cần tạo file VerifyEmailOtpScreenStyles.ts sau. 
-// Tôi sẽ sử dụng Styles trực tiếp ở đây để tiện
-const localStyles = StyleSheet.create({
-    screenContainer: {
-        flex: 1,
-        backgroundColor: Colors.white,
-    },
-    contentContainer: {
-        flexGrow: 1,
-        paddingHorizontal: 25,
+// --- ĐỊNH NGHĨA HÌNH ẢNH (GIẢ ĐỊNH) ---
+const logo = require('../../assets/images/logo.png'); 
+
+// --- BỔ SUNG LOCAL STYLE CHO LOGO VÀ CONTAINER ---
+// Styles này được dùng tạm thời nếu bạn chưa thêm vào VerifyEmailOtpScreenStyles.ts
+const customLocalStyles = StyleSheet.create({
+    logoContainer: {
+        width: '100%',
         alignItems: 'center',
-        paddingTop: 50,
+        marginBottom: 30, // Khoảng cách giữa logo và tiêu đề
+        paddingTop: 50,  // Đẩy logo xuống
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        marginTop: 40,
-        marginBottom: 10,
-        color: Colors.textPrimary,
+    logoImage: {
+        width: 120, // Kích thước cố định cho logo
+        height: 120,
+        resizeMode: 'contain',
     },
-    subtitle: {
-        fontSize: 16,
-        color: Colors.textSecondary,
-        textAlign: 'center',
-        marginBottom: 30,
-    },
-    inputContainer: {
-        width: '100%',
-        marginTop: 20,
-        marginBottom: 5,
-    },
-    buttonStyle: {
-        width: '100%',
-        marginTop: 15,
-        marginBottom: 10,
-    },
-    linkContainer: {
-        flexDirection: 'row',
-        marginTop: 20,
-    },
-    loginText: {
-        fontSize: 14,
-        color: Colors.textSecondary,
-    },
-    resendButton: {
-        // Style cho nút Gửi lại mã
-        paddingVertical: 5,
-        alignSelf: 'center',
-        marginBottom: 50,
-    },
-    resendText: {
-        color: Colors.textLink,
-        fontSize: 14,
-        fontWeight: 'bold',
-    }
 });
-// ----------------------------
 
 export const VerifyEmailOtpScreen: React.FC<VerifyEmailOtpScreenNavigationProps> = ({ route, navigation }) => {
     // Lấy email từ màn hình đăng ký truyền qua
@@ -126,7 +88,8 @@ export const VerifyEmailOtpScreen: React.FC<VerifyEmailOtpScreenNavigationProps>
             Alert.alert('Thành công', 'Mã xác thực mới đã được gửi đến email của bạn.');
 
         } catch (error) {
-            const errorMessage = error = error instanceof Error 
+            // 👈 ĐÃ SỬA LỖI CÚ PHÁP
+            const errorMessage = error instanceof Error 
                 ? error.message 
                 : 'Lỗi không xác định khi gửi lại mã.';
             Alert.alert('Gửi lại mã thất bại', errorMessage);
@@ -136,16 +99,21 @@ export const VerifyEmailOtpScreen: React.FC<VerifyEmailOtpScreenNavigationProps>
     };
 
     return (
-        <ScrollView style={localStyles.screenContainer} contentContainerStyle={localStyles.contentContainer}>
-            {/* HeaderLogo */}
-            <HeaderLogo onPress={() => navigation.goBack()} />
+        <ScrollView style={styles.screenContainer} contentContainerStyle={styles.contentContainer}>
+            {/* 👈 THAY THẾ HeaderLogo bằng View chứa Image Logo */}
+            <View style={customLocalStyles.logoContainer}>
+                <Image
+                    source={logo}
+                    style={customLocalStyles.logoImage}
+                />
+            </View>
 
-            <Text style={localStyles.title}>Xác minh tài khoản của bạn</Text>
-            <Text style={localStyles.subtitle}>
+            <Text style={styles.title}>Xác minh tài khoản của bạn</Text>
+            <Text style={styles.subtitle}>
                 Vui lòng nhập mã xác thực đã gửi đến email của bạn ({registeredEmail || '...'}).
             </Text>
 
-            <View style={localStyles.inputContainer}>
+            <View style={styles.inputContainer}>
                 {/* Input Mã xác thực */}
                 <CustomInput
                     placeholder="••••••"
@@ -154,7 +122,7 @@ export const VerifyEmailOtpScreen: React.FC<VerifyEmailOtpScreenNavigationProps>
                     keyboardType="numeric"
                     secureTextEntry
                     maxLength={6} // Giới hạn 6 ký tự
-                    style={{ textAlign: 'center' }} // Căn giữa cho mã OTP
+                    style={styles.otpInputText} 
                 />
             </View>
 
@@ -164,7 +132,7 @@ export const VerifyEmailOtpScreen: React.FC<VerifyEmailOtpScreenNavigationProps>
                 onPress={handleVerify}
                 variant="primary"
                 disabled={isLoading || isResending || otpCode.length !== 6}
-                style={localStyles.buttonStyle}
+                style={styles.buttonStyle}
             />
 
             {/* Nút Gửi lại mã */}
@@ -173,12 +141,12 @@ export const VerifyEmailOtpScreen: React.FC<VerifyEmailOtpScreenNavigationProps>
                 onPress={handleResend}
                 variant="link"
                 disabled={isLoading || isResending}
-                style={localStyles.resendButton}
+                style={styles.resendButton}
             />
 
             {/* Link Đăng nhập */}
-            <View style={localStyles.linkContainer}>
-                <Text style={localStyles.loginText}>Đã có tài khoản? </Text>
+            <View style={styles.linkContainer}>
+                <Text style={styles.loginText}>Đã có tài khoản? </Text>
                 <CustomButton
                     title="Đăng nhập"
                     onPress={() => navigation.navigate(AuthRoutes.Login)}
