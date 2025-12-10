@@ -1,7 +1,5 @@
 import { StyleSheet, Dimensions } from 'react-native';
-
 const { width } = Dimensions.get('window');
-
 export const BRAND_COLOR = '#8BC34A';
 
 const styles = StyleSheet.create({
@@ -118,22 +116,24 @@ const styles = StyleSheet.create({
         flex: 1,
     },
 
-    badgeCount: {
-        backgroundColor: BRAND_COLOR,
-        paddingHorizontal: 10,
-        paddingVertical: 4,
-        borderRadius: 12,
-        minWidth: 28,
+    // ✅ NÚT XEM TẤT CẢ
+    viewAllButton: {
+        flexDirection: 'row',
         alignItems: 'center',
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        backgroundColor: '#F0F9FF',
+        gap: 4,
     },
 
-    badgeText: {
-        color: '#FFFFFF',
-        fontSize: 12,
-        fontWeight: '700',
+    viewAllText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: BRAND_COLOR,
     },
 
-    // ========== RECENT CARDS ==========
+    // ========== INGREDIENT CARDS (RECENT CARDS) ==========
     horizontalScrollContent: {
         paddingHorizontal: 16,
         gap: 12,
@@ -161,6 +161,23 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         justifyContent: 'center',
         alignItems: 'center',
+        position: 'relative',
+    },
+
+    newBadge: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        backgroundColor: '#EF4444',
+        paddingHorizontal: 8,
+        paddingVertical: 3,
+        borderRadius: 8,
+    },
+
+    newBadgeText: {
+        color: '#FFFFFF',
+        fontSize: 10,
+        fontWeight: '700',
     },
 
     recentCardText: {
@@ -169,6 +186,14 @@ const styles = StyleSheet.create({
         fontWeight: '600',
         textAlign: 'center',
         lineHeight: 18,
+        marginBottom: 4,
+    },
+
+    categoryText: {
+        fontSize: 11,
+        color: '#6B7280',
+        fontWeight: '500',
+        textAlign: 'center',
     },
 
     // ========== DISH CARD ==========

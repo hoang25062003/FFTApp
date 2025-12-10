@@ -8,18 +8,17 @@ import {
   Alert,
   Animated,
   ActivityIndicator,
+  
 } from 'react-native';
-import { 
-  CheckCircle2,
-} from 'lucide-react-native';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useNavigation } from '@react-navigation/native';
 import { 
   styles, 
   FULL_ITEM_WIDTH, 
   SIDE_OFFSET 
 } from './CreateHealthMetricScreenStyles';
 import HeaderApp from '../../components/HeaderApp';
-import { HealthMetricStackParamList } from '../../navigation/HealthMetricStackNavigator';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // IMPORT SERVICES
 import ActivityLevelService, { 
@@ -28,8 +27,6 @@ import ActivityLevelService, {
 } from '../../services/ActivityLevelService';
 
 import HealthMetricService, { HealthMetricInput } from '../../services/HealthMetricService';
-
-
 
 const DATA_LIST = getAllActivityLevels();
 
@@ -88,7 +85,6 @@ const CreateHealthMetricScreen = () => {
   const handleSelectActivity = async (level: ActivityLevel, index: number) => {
     if (selectedLevel === level) return;
 
-    // Update UI
     setSelectedLevel(level);
     if (activityScrollViewRef.current) {
       activityScrollViewRef.current.scrollTo({
@@ -97,7 +93,6 @@ const CreateHealthMetricScreen = () => {
       });
     }
 
-    // Call API (Background update)
     try {
       console.log(`Updating activity level to: ${level}`);
       await ActivityLevelService.changeActivityLevel(level);
@@ -133,7 +128,6 @@ const CreateHealthMetricScreen = () => {
       };
     }
 
-    // Validate optional fields
     if (bodyFat.trim()) {
       const bodyFatNum = parseFloat(bodyFat);
       if (isNaN(bodyFatNum) || bodyFatNum < 0 || bodyFatNum > 100) {
@@ -159,7 +153,6 @@ const CreateHealthMetricScreen = () => {
 
   // --- 4. SUBMIT HEALTH METRIC ---
   const handleSubmit = async () => {
-    // Validation
     const validation = validateInput();
     if (!validation.isValid) {
       Alert.alert('Dữ liệu không hợp lệ', validation.message);
@@ -169,7 +162,6 @@ const CreateHealthMetricScreen = () => {
     setIsSubmitting(true);
 
     try {
-      // Chuẩn bị payload
       const payload: HealthMetricInput = {
         weightKg: parseFloat(weight),
         heightCm: parseFloat(height),
@@ -179,15 +171,11 @@ const CreateHealthMetricScreen = () => {
       };
 
       console.log('📤 Submitting Health Metric:', payload);
-
-      // Gọi API tạo mới
       const response = await HealthMetricService.createHealthMetric(payload);
       
       console.log('✅ API Response:', response);
 
-      // Kiểm tra xem có response data không
       if (response && response.id) {
-        // Trường hợp 1: Backend trả về data đầy đủ (201 Created + body)
         console.log('✅ Created successfully with ID:', response.id);
         
         Alert.alert(
@@ -199,22 +187,18 @@ const CreateHealthMetricScreen = () => {
           [{ 
             text: 'OK', 
             onPress: () => {
-              // Reset form
               setWeight('');
               setHeight('');
               setBodyFat('');
               setMuscleMass('');
               setNote('');
-              
               navigation.goBack();
             }
           }]
         );
       } else {
-        // Trường hợp 2: Backend trả về 204 No Content hoặc empty body
         console.warn('⚠️ API returned empty response, fetching latest metric...');
         
-        // Fetch lại để lấy record mới nhất
         const latestMetric = await HealthMetricService.getLatestHealthMetric();
         
         if (latestMetric) {
@@ -239,7 +223,6 @@ const CreateHealthMetricScreen = () => {
             }]
           );
         } else {
-          // Fallback: Không thể fetch được data
           console.warn('⚠️ Cannot fetch latest metric');
           Alert.alert(
             'Thành công', 
@@ -261,15 +244,8 @@ const CreateHealthMetricScreen = () => {
 
     } catch (error: any) {
       console.error('❌ Submit Error:', error);
-      
-      // Hiển thị error message chi tiết
       const errorMessage = error.message || 'Có lỗi xảy ra khi lưu thông tin.';
-      
-      Alert.alert(
-        'Lỗi', 
-        errorMessage,
-        [{ text: 'Đóng' }]
-      );
+      Alert.alert('Lỗi', errorMessage, [{ text: 'Đóng' }]);
     } finally {
       setIsSubmitting(false);
     }
@@ -278,26 +254,41 @@ const CreateHealthMetricScreen = () => {
   const currentLevelInfo = ActivityLevelService.getActivityLevelInfo(selectedLevel);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={styles.container} >
       <HeaderApp isHome={false} onBackPress={handleBackPress} />
 
       <ScrollView 
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Hồ Sơ Sức Khỏe</Text>
-            <Text style={styles.headerSubtitle}>Thiết lập thông số TDEE & Body</Text>
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <View style={styles.headerBackground}>
+            <View style={styles.decorativeCircle1} />
+            <View style={styles.decorativeCircle2} />
+            
+            <View style={styles.headerContent}>
+              <View>
+                <Text style={styles.headerSubtitle}>Thiết lập thông số</Text>
+                <Text style={styles.headerTitle}>Hồ Sơ Sức Khỏe</Text>
+              </View>
+              <View style={styles.headerIconContainer}>
+                <Icon name="heart-pulse" size={32} color="#FFFFFF" />
+              </View>
+            </View>
           </View>
         </View>
 
         {/* --- SECTION 1: ACTIVITY LEVEL --- */}
         <View style={styles.sectionContainer}>
-          <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
-             <Text style={styles.sectionTitle}>1. Mức độ hoạt động</Text>
-             {isFetchingLevel && <ActivityIndicator size="small" color="#000" style={{marginRight: 20}}/>}
+          <View style={styles.sectionHeader}>
+            <Icon name="run" size={22} color="#8BC34A" />
+            <Text style={styles.sectionTitle}>Mức độ hoạt động</Text>
+            {isFetchingLevel && (
+              <ActivityIndicator size="small" color="#8BC34A" style={{ marginLeft: 8 }} />
+            )}
           </View>
           
           <Animated.ScrollView
@@ -357,39 +348,53 @@ const CreateHealthMetricScreen = () => {
             })}
           </Animated.ScrollView>
           
-          <View style={styles.feedbackContainer}>
-             <Text style={styles.feedbackText}>
-               Bạn chọn: <Text style={{fontWeight: 'bold', color: currentLevelInfo.color}}>{currentLevelInfo.titleVN}</Text>
-             </Text>
+          <View style={styles.selectedBadge}>
+            <Icon name="check-circle" size={16} color={currentLevelInfo.color} />
+            <Text style={styles.selectedText}>
+              Đã chọn: <Text style={[styles.selectedTextBold, { color: currentLevelInfo.color }]}>
+                {currentLevelInfo.titleVN}
+              </Text>
+            </Text>
           </View>
         </View>
 
         {/* --- SECTION 2: BODY METRICS --- */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>2. Chỉ số cơ thể</Text>
+          <View style={styles.sectionHeader}>
+            <Icon name="human" size={22} color="#8BC34A" />
+            <Text style={styles.sectionTitle}>Chỉ số cơ thể</Text>
+          </View>
           
           <View style={styles.formCard}>
             {/* Row 1: Cân nặng & Chiều cao */}
             <View style={styles.row}>
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Cân nặng (kg) <Text style={{color: 'red'}}>*</Text></Text>
+                <Text style={styles.label}>
+                  <Icon name="weight-kilogram" size={14} color="#6B7280" /> Cân nặng (kg)
+                  <Text style={styles.required}> *</Text>
+                </Text>
                 <TextInput
                   style={[styles.input, focusedInput === 'weight' && styles.inputFocused]}
                   value={weight}
                   onChangeText={setWeight}
                   placeholder="Ví dụ: 65"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                   onFocus={() => handleFocus('weight')}
                   onBlur={handleBlur}
                 />
               </View>
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Chiều cao (cm) <Text style={{color: 'red'}}>*</Text></Text>
+                <Text style={styles.label}>
+                  <Icon name="human-male-height" size={14} color="#6B7280" /> Chiều cao (cm)
+                  <Text style={styles.required}> *</Text>
+                </Text>
                 <TextInput
                   style={[styles.input, focusedInput === 'height' && styles.inputFocused]}
                   value={height}
                   onChangeText={setHeight}
                   placeholder="Ví dụ: 170"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                   onFocus={() => handleFocus('height')}
                   onBlur={handleBlur}
@@ -400,24 +405,30 @@ const CreateHealthMetricScreen = () => {
             {/* Row 2: Tỷ lệ mỡ & Cơ bắp */}
             <View style={styles.row}>
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Tỷ lệ mỡ (%)</Text>
+                <Text style={styles.label}>
+                  <Icon name="percent" size={14} color="#6B7280" /> Tỷ lệ mỡ (%)
+                </Text>
                 <TextInput
                   style={[styles.input, focusedInput === 'bodyFat' && styles.inputFocused]}
                   value={bodyFat}
                   onChangeText={setBodyFat}
                   placeholder="Tùy chọn"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                   onFocus={() => handleFocus('bodyFat')}
                   onBlur={handleBlur}
                 />
               </View>
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Cơ bắp (kg)</Text>
+                <Text style={styles.label}>
+                  <Icon name="arm-flex" size={14} color="#6B7280" /> Cơ bắp (kg)
+                </Text>
                 <TextInput
                   style={[styles.input, focusedInput === 'muscleMass' && styles.inputFocused]}
                   value={muscleMass}
                   onChangeText={setMuscleMass}
                   placeholder="Tùy chọn"
+                  placeholderTextColor="#9CA3AF"
                   keyboardType="numeric"
                   onFocus={() => handleFocus('muscleMass')}
                   onBlur={handleBlur}
@@ -427,12 +438,15 @@ const CreateHealthMetricScreen = () => {
 
             {/* Ghi chú */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Ghi chú thêm</Text>
+              <Text style={styles.label}>
+                <Icon name="note-text-outline" size={14} color="#6B7280" /> Ghi chú thêm
+              </Text>
               <TextInput
-                style={[styles.input, styles.bioInput, focusedInput === 'note' && styles.bioInputFocused]}
+                style={[styles.input, styles.bioInput, focusedInput === 'note' && styles.inputFocused]}
                 value={note}
                 onChangeText={setNote}
-                placeholder="Ghi chú về thể trạng..."
+                placeholder="Ghi chú về thể trạng, mục tiêu..."
+                placeholderTextColor="#9CA3AF"
                 multiline
                 textAlignVertical="top"
                 onFocus={() => handleFocus('note')}
@@ -442,10 +456,10 @@ const CreateHealthMetricScreen = () => {
           </View>
         </View>
 
-        <View style={{ height: 30 }} />
+        <View style={{ height: 20 }} />
         
         <TouchableOpacity 
-          style={[styles.submitButton, isSubmitting && { opacity: 0.7 }]} 
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
           activeOpacity={0.8} 
           onPress={handleSubmit}
           disabled={isSubmitting}
@@ -454,7 +468,7 @@ const CreateHealthMetricScreen = () => {
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <>
-              <CheckCircle2 size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Icon name="content-save" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
               <Text style={styles.submitButtonText}>Lưu Hồ Sơ</Text>
             </>
           )}

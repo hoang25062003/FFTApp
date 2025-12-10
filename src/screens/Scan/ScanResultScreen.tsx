@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
 import styles from './ScanResultScreenStyles';
 import { DetectedIngredientResponse } from '../../services/ScanService';
 import { ScanStackParamList } from '../../navigation/ScanStackNavigator';
@@ -76,12 +76,34 @@ const ScanResultScreen: React.FC = () => {
       Alert.alert('Thông báo', 'Vui lòng chọn ít nhất một nguyên liệu để tìm kiếm.');
       return;
     }
+
     const ingredientNames = selected.map(item => item.name);
     
-    Alert.alert(
-      'Tìm kiếm công thức',
-      `Đang tìm kiếm với ${selected.length} nguyên liệu: ${ingredientNames.join(', ')}`,
-      [{ text: 'OK' }]
+    // Tạo search query từ các nguyên liệu đã chọn
+    const searchQuery = ingredientNames.join(', ');
+    
+    // Navigate to Home screen with search parameters
+    navigation.dispatch(
+      CommonActions.reset({
+        index: 0,
+        routes: [
+          {
+            name: 'MainTabs',
+            state: {
+              routes: [
+                {
+                  name: 'Home',
+                  params: {
+                    searchQuery: searchQuery,
+                    ingredientNames: ingredientNames,
+                    fromScan: true,
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      })
     );
   };
 

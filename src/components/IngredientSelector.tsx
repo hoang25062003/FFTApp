@@ -7,9 +7,13 @@ import {
   Modal,
   FlatList,
   StyleSheet,
+  ActivityIndicator,
+  Keyboard,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getIngredients, Ingredient } from '../services/IngredientService';
+
+const BRAND_COLOR = '#8BC34A';
 
 interface IngredientWithQuantity {
   ingredientId: string;
@@ -27,33 +31,22 @@ const IngredientSelector: React.FC<IngredientSelectorProps> = ({
   onIngredientsChange,
 }) => {
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
-  const [filteredIngredients, setFilteredIngredients] = useState<Ingredient[]>([]);
-  const [searchText, setSearchText] = useState('');
-  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchIngredients();
-  }, []);
-
-  useEffect(() => {
-    if (searchText.trim() === '') {
-      setFilteredIngredients(allIngredients);
-    } else {
-      const filtered = allIngredients.filter((ingredient) =>
-        ingredient.name.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setFilteredIngredients(filtered);
+    if (showModal) {
+      fetchIngredients();
     }
-  }, [searchText, allIngredients]);
+  }, [showModal]);
 
   const fetchIngredients = async () => {
     try {
       setLoading(true);
-      const response = await getIngredients(); 
+      const response = await getIngredients();
       const ingredients = response.items;
       setAllIngredients(ingredients);
-      setFilteredIngredients(ingredients);
     } catch (error) {
       console.error('Error fetching ingredients:', error);
     } finally {
@@ -61,15 +54,21 @@ const IngredientSelector: React.FC<IngredientSelectorProps> = ({
     }
   };
 
+  const filteredIngredients = allIngredients.filter((ingredient) =>
+    ingredient.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   const isIngredientSelected = (ingredientId: string) => {
     return selectedIngredients.some((item) => item.ingredientId === ingredientId);
   };
 
-  const handleSelectIngredient = (ingredient: Ingredient) => {
+  const handleToggleIngredient = (ingredient: Ingredient) => {
     const isSelected = isIngredientSelected(ingredient.id);
 
     if (isSelected) {
-      handleRemoveIngredient(ingredient.id);
+      onIngredientsChange(
+        selectedIngredients.filter((item) => item.ingredientId !== ingredient.id)
+      );
     } else {
       const newItem: IngredientWithQuantity = {
         ingredientId: ingredient.id,
@@ -97,334 +96,363 @@ const IngredientSelector: React.FC<IngredientSelectorProps> = ({
     );
   };
 
-  const handleOpenDropdown = () => {
-    setIsDropdownVisible(true);
-    setSearchText('');
+  const handleOpenModal = () => {
+    Keyboard.dismiss();
+    setShowModal(true);
+    setSearchQuery('');
   };
 
-  const handleCloseDropdown = () => {
-    setIsDropdownVisible(false);
-    setSearchText('');
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSearchQuery('');
   };
 
   return (
-    <View>
-      {/* Selected Ingredients List */}
-      {selectedIngredients.map((item) => (
-        <View key={item.ingredientId} style={styles.selectedIngredientRow}>
-          <View style={styles.ingredientNameSection}>
-            <Text style={styles.ingredientName}>{item.ingredientName}</Text>
-          </View>
+    <View style={styles.container}>
+      {/* 1. HIỂN THỊ DANH SÁCH ĐÃ CHỌN (1 HÀNG NGANG) */}
+      {selectedIngredients.length > 0 && (
+        <View style={styles.selectedListContainer}>
+          {selectedIngredients.map((item) => (
+            <View key={item.ingredientId} style={styles.ingredientCard}>
+              
+              {/* Main Content: Icon + Tên + Input (Cùng 1 hàng) */}
+              <View style={styles.cardMainContent}>
+                
+                {/* Icon */}
+                <View style={styles.cardIconWrapper}>
+                    <Icon name="food-apple" size={22} color="#F97316" />
+                </View>
 
-          <View style={styles.quantitySection}>
-            <TextInput
-              style={styles.quantityInput}
-              value={item.quantityGram > 0 ? item.quantityGram.toString() : ''}
-              onChangeText={(text) => handleUpdateQuantity(item.ingredientId, text)}
-              keyboardType="numeric"
-              placeholder="0"
-              placeholderTextColor="#9CA3AF"
-            />
+                {/* Tên: Flex 1 để chiếm chỗ trống và đẩy Input sang phải */}
+                <Text style={styles.cardName} numberOfLines={1} ellipsizeMode="tail">
+                  {item.ingredientName}
+                </Text>
 
-            <Text style={styles.unitText}>g</Text>
+                {/* Input: Căn sát phải */}
+                <View style={styles.quantityRow}>
+                  <Text style={styles.bracketText}>[</Text>
+                  <TextInput
+                    style={styles.inlineInput}
+                    value={item.quantityGram > 0 ? item.quantityGram.toString() : ''}
+                    onChangeText={(text) => handleUpdateQuantity(item.ingredientId, text)}
+                    keyboardType="numeric"
+                    placeholder="0"
+                    placeholderTextColor="#9CA3AF"
+                  />
+                  <Text style={styles.bracketText}>]</Text>
+                  <Text style={styles.unitText}>gram</Text>
+                </View>
+              </View>
 
-            <TouchableOpacity
-              style={styles.removeIconButton}
-              onPress={() => handleRemoveIngredient(item.ingredientId)}
-            >
-              <Icon name="close-circle" size={24} color="#DC2626" />
-            </TouchableOpacity>
-          </View>
+              {/* Đường kẻ dọc ngăn cách */}
+              <View style={styles.verticalDivider} />
+
+              {/* Nút xóa (X) */}
+              <TouchableOpacity
+                style={styles.cardRemoveBtn}
+                onPress={() => handleRemoveIngredient(item.ingredientId)}
+              >
+                <Icon name="close" size={18} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
+          ))}
         </View>
-      ))}
+      )}
 
-
-      <TouchableOpacity
-        style={styles.inputContainer}
-        onPress={handleOpenDropdown}
-        activeOpacity={0.7}
-      >
-      
-        <TextInput
-          style={styles.input}
-          placeholder="Thêm nguyên liệu..."
-          placeholderTextColor="#9CA3AF"
-          editable={false}
-          pointerEvents="none"
-        />
+      {/* 2. NÚT CHỌN NGUYÊN LIỆU (PHÍA DƯỚI) */}
+      <TouchableOpacity style={styles.selectButton} onPress={handleOpenModal}>
+        <View style={styles.selectButtonContent}>
+           <Icon 
+             name="food-apple" 
+             size={20} 
+             color={selectedIngredients.length > 0 ? "#EF4444" : "#9CA3AF"} 
+           />
+           <Text style={styles.selectButtonText}>
+             {selectedIngredients.length > 0 
+               ? `Đã chọn ${selectedIngredients.length} nguyên liệu` 
+               : "Nhấn để chọn nguyên liệu"}
+           </Text>
+        </View>
         <Icon name="chevron-down" size={20} color="#6B7280" />
       </TouchableOpacity>
 
-      {/* Dropdown Modal */}
+      {/* --- MODAL --- */}
       <Modal
-        visible={isDropdownVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCloseDropdown}
+        visible={showModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleCloseModal}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={handleCloseDropdown}
-        >
-          <View style={styles.dropdownContainer}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
             {/* Header */}
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Chọn nguyên liệu</Text>
-              <TouchableOpacity onPress={handleCloseDropdown}>
+              <View style={styles.modalTitleRow}>
+                <View style={styles.modalIconBg}>
+                  <Icon name="food-apple" size={20} color={BRAND_COLOR} />
+                </View>
+                <Text style={styles.modalTitle}>Chọn nguyên liệu</Text>
+              </View>
+              <TouchableOpacity onPress={handleCloseModal} style={styles.closeButton}>
                 <Icon name="close" size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
 
-            {/* Search Input */}
+            {/* Search */}
             <View style={styles.searchContainer}>
-              <Icon name="search" size={20} color="#6B7280" />
+              <Icon name="magnify" size={20} color="#9CA3AF" />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Tìm kiếm nguyên liệu..."
+                placeholder="Nhập tên để tìm..."
                 placeholderTextColor="#9CA3AF"
-                value={searchText}
-                onChangeText={setSearchText}
-                autoFocus
+                value={searchQuery}
+                onChangeText={setSearchQuery}
               />
-              {searchText.length > 0 && (
-                <TouchableOpacity onPress={() => setSearchText('')}>
-                  <Icon name="close-circle" size={20} color="#9CA3AF" />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')}>
+                  <Icon name="close-circle" size={18} color="#9CA3AF" />
                 </TouchableOpacity>
               )}
             </View>
 
-            {/* Ingredients List */}
-            <FlatList
-              data={filteredIngredients}
-              keyExtractor={(item) => item.id}
-              style={styles.ingredientsList}
-              showsVerticalScrollIndicator={true}
-              ListEmptyComponent={
-                <View style={styles.emptyContainer}>
-                  <Icon 
-                    name={loading ? "hourglass-outline" : "search-outline"} 
-                    size={48} 
-                    color="#D1D5DB" 
-                  />
-                  <Text style={styles.emptyText}>
-                    {loading ? 'Đang tải...' : 'Không tìm thấy nguyên liệu'}
-                  </Text>
-                </View>
-              }
-              renderItem={({ item }) => {
-                const selected = isIngredientSelected(item.id);
-                return (
-                  <TouchableOpacity
-                    style={[
-                      styles.ingredientItem,
-                      selected && styles.ingredientItemSelected
-                    ]}
-                    onPress={() => handleSelectIngredient(item)}
-                  >
-                    <View style={styles.ingredientItemContent}>
-                      <View style={[
-                        styles.checkbox,
-                        selected && styles.checkboxSelected
-                      ]}>
-                        {selected && (
-                          <Icon name="checkmark" size={16} color="#fff" />
-                        )}
+            {/* List */}
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={BRAND_COLOR} />
+                <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={filteredIngredients}
+                keyExtractor={(item) => item.id}
+                showsVerticalScrollIndicator={true}
+                style={styles.list}
+                ListEmptyComponent={
+                  <View style={styles.emptyContainer}>
+                    <Icon name="database-off" size={48} color="#D1D5DB" />
+                    <Text style={styles.emptyText}>Không tìm thấy kết quả nào</Text>
+                  </View>
+                }
+                renderItem={({ item }) => {
+                  const isSelected = isIngredientSelected(item.id);
+                  return (
+                    <TouchableOpacity
+                      style={[styles.listItem, isSelected && styles.listItemSelected]}
+                      onPress={() => handleToggleIngredient(item)}
+                    >
+                      <View style={styles.listItemContent}>
+                        {/* 1. Left Dot (Thay cho checkbox vuông) */}
+                        <View style={[styles.dot, isSelected && styles.dotSelected]} />
+                        
+                        <Text style={[styles.listItemText, isSelected && styles.listItemTextSelected]}>
+                          {item.name}
+                        </Text>
                       </View>
-                      <Text style={[
-                        styles.ingredientItemText,
-                        selected && styles.ingredientItemTextSelected
-                      ]}>
-                        {item.name}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              }}
-            />
+
+                      {/* 2. Right Check Icon (Thêm tích V bên phải) */}
+                      {isSelected && (
+                        <Icon name="check-circle" size={22} color={BRAND_COLOR} />
+                      )}
+                    </TouchableOpacity>
+                  );
+                }}
+              />
+            )}
+
+            {/* Footer Modal */}
+            <View style={styles.modalFooter}>
+                <TouchableOpacity style={styles.doneButton} onPress={handleCloseModal}>
+                    <Text style={styles.doneButtonText}>Xong</Text>
+                </TouchableOpacity>
+            </View>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  // Selected Ingredients Styles
-  selectedIngredientRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: '#F0F9FF',
-    borderRadius: 12,
+  container: {
+    marginBottom: 10,
+  },
+  
+  // --- CARD DANH SÁCH ---
+  selectedListContainer: {
     marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#DBEAFE',
+    gap: 8, 
   },
-  ingredientNameSection: {
-    flex: 1,
-    marginRight: 12,
-  },
-  ingredientName: {
-    fontSize: 15,
-    color: '#1F2937',
-    fontWeight: '600',
-  },
-  quantitySection: {
+  ingredientCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-  },
-  quantityInput: {
-    width: 70,
-    height: 46,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 8,
-    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  cardMainContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cardIconWrapper: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardName: {
+    flex: 1, 
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#374151',
+    marginRight: 8, 
+  },
+  quantityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  bracketText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  inlineInput: {
+    minWidth: 36,
     textAlign: 'center',
     fontSize: 15,
     color: '#1F2937',
-    backgroundColor: '#fff',
-    fontWeight: '600',
+    fontWeight: '700', 
+    padding: 0,
+    marginHorizontal: 2,
+    borderBottomWidth: 1,
+    borderBottomColor: '#D1D5DB',
   },
   unitText: {
-    fontSize: 15,
-    color: '#6B7280',
-    fontWeight: '600',
-  },
-  removeIconButton: {
-    padding: 4,
     marginLeft: 4,
+    fontSize: 14,
+    color: '#6B7280',
+  },
+  verticalDivider: {
+    width: 1,
+    height: 24, 
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 10,
+  },
+  cardRemoveBtn: {
+    padding: 4,
   },
 
-  // Input Field Styles
-  inputContainer: {
+  // --- SELECT BUTTON ---
+  selectButton: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 8,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    gap: 10,
+    
   },
-  inputIcon: {
-    marginRight: 2,
+  selectButtonContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+      
   },
-  input: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1F2937',
-    fontWeight: '500',
+  selectButtonText: {
+      fontSize: 15,
+      color: '#9CA3AF',
+      fontWeight: '500',
   },
 
-  // Modal Styles
+  // --- MODAL STYLES ---
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
-  dropdownContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 20,
-    width: '100%',
-    maxHeight: '75%',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 10,
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    letterSpacing: 0.3,
-  },
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-    gap: 10,
-    backgroundColor: '#F9FAFB',
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#1F2937',
-    fontWeight: '500',
-  },
-  ingredientsList: {
-    maxHeight: 450,
-  },
-  ingredientItem: {
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  ingredientItemSelected: {
+  modalTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  modalIconBg: {
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: '#F0F9FF',
+    justifyContent: 'center', alignItems: 'center',
   },
-  ingredientItemContent: {
-    flexDirection: 'row',
+  modalTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  closeButton: { padding: 4 },
+  
+  searchContainer: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: 12, height: 44,
+    margin: 20, gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 15, color: '#1F2937' },
+  
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { marginTop: 10, color: '#6B7280' },
+  list: { flex: 1 },
+  emptyContainer: { alignItems: 'center', paddingVertical: 60 },
+  emptyText: { marginTop: 10, color: '#9CA3AF' },
+
+  // --- LIST ITEM STYLES (UPDATED) ---
+  listItem: {
+    flexDirection: 'row', 
     alignItems: 'center',
+    justifyContent: 'space-between', // Đẩy nội dung sang 2 bên
+    paddingHorizontal: 20, 
+    paddingVertical: 14,
+    borderBottomWidth: 1, 
+    borderBottomColor: '#F3F4F6',
+  },
+  listItemSelected: { backgroundColor: '#F0F9FF' },
+  
+  listItemContent: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
     gap: 12,
+    flex: 1, // Chiếm hết phần bên trái
   },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 2,
-    borderColor: '#D1D5DB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
+  
+  // Style cho chấm tròn (thay checkbox cũ)
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6, // Tròn
+    backgroundColor: '#D1D5DB', // Màu xám khi chưa chọn
   },
-  checkboxSelected: {
-    backgroundColor: '#8BC34A',
-    borderColor: '#8BC34A',
+  dotSelected: {
+    backgroundColor: BRAND_COLOR, // Màu xanh khi chọn
   },
-  ingredientItemText: {
-    fontSize: 15,
-    color: '#4B5563',
-    fontWeight: '500',
+  
+  listItemText: { fontSize: 15, color: '#4B5563', fontWeight: '500' },
+  listItemTextSelected: { color: '#1F2937', fontWeight: '700' },
+
+  modalFooter: {
+      padding: 20, borderTopWidth: 1, borderTopColor: '#F3F4F6'
   },
-  ingredientItemTextSelected: {
-    color: '#1F2937',
-    fontWeight: '600',
+  doneButton: {
+      backgroundColor: BRAND_COLOR, borderRadius: 12, paddingVertical: 14, alignItems: 'center'
   },
-  emptyContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 48,
-  },
-  emptyText: {
-    textAlign: 'center',
-    color: '#9CA3AF',
-    fontSize: 15,
-    fontWeight: '500',
-    marginTop: 12,
-  },
+  doneButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' }
 });
 
 export default IngredientSelector;

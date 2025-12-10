@@ -1,15 +1,20 @@
-// FILE: src/navigation/RootNavigator.tsx
-
 import React, { useState, useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigationContainer } from '@react-navigation/native';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { jwtDecode } from 'jwt-decode';
+
 import AuthNavigator from './AuthNavigator'; 
 import TabNavigatorWithButton from './TabNavigatorWithButton';
 import CreateRecipeScreen from '../screens/Recipe/CreateRecipeScreen';
-import DietRestrictionStackNavigator from './DietRestrictionStackNavigator'; // ✅ IMPORT STACK NAVIGATOR
-
+import DietRestrictionStackNavigator from './DietRestrictionStackNavigator';
+// ✅ IMPORT 2 SCREEN QUAN TRỌNG
+import ViewRecipeScreen from '../screens/Recipe/ViewRecipeScreen';
+import ProfileScreen from '../screens/Profile/ProfileScreen';
+import ListFollowScreen from '../screens/Follow/ListFollowScreen';
+import IngredientsScreen from '../screens/Ingredients/IngredientsScreen';
+import NotificationScreen from '../screens/Notification/NotificationScreen';
 const RootStack = createNativeStackNavigator();
 
 const RootNavigator: React.FC = () => {
@@ -23,9 +28,22 @@ const RootNavigator: React.FC = () => {
     const checkLoginStatus = async () => {
         try {
             const token = await AsyncStorage.getItem('userToken');
-            setIsLoggedIn(!!token); 
+            
+            if (token) {
+                const decoded: any = jwtDecode(token);
+                const currentTime = Date.now() / 1000;
+
+                if (decoded.exp < currentTime) {
+                    await AsyncStorage.removeItem('userToken');
+                    setIsLoggedIn(false);
+                } else {
+                    setIsLoggedIn(true);
+                }
+            } else {
+                setIsLoggedIn(false);
+            }
         } catch (error) {
-            console.error('Failed to check login status:', error);
+            setIsLoggedIn(false);
         } finally {
             setIsLoading(false);
         }
@@ -55,7 +73,6 @@ const RootNavigator: React.FC = () => {
                     component={TabNavigatorWithButton} 
                 />
 
-                {/* ✅ MÀN HÌNH TẠO CÔNG THỨC */}
                 <RootStack.Screen 
                     name="CreateRecipe" 
                     component={CreateRecipeScreen}
@@ -72,10 +89,58 @@ const RootNavigator: React.FC = () => {
                     }}
                 />
 
-                {/* ✅ THAY THẾ: Sử dụng DietRestrictionStackNavigator thay vì màn hình đơn lẻ */}
                 <RootStack.Screen 
                     name="DietRestrictionFlow" 
                     component={DietRestrictionStackNavigator}
+                />
+
+                {/* ✅ SCREEN XEM CHI TIẾT CÔNG THỨC - DÙNG CHUNG CHO TẤT CẢ TAB */}
+                <RootStack.Screen 
+                    name="ViewRecipeScreen" 
+                    component={ViewRecipeScreen}
+                    options={{
+                        presentation: 'card',
+                        animation: 'slide_from_right',
+                        gestureEnabled: true,
+                    }}
+                />
+
+                {/* ✅ SCREEN XEM PROFILE NGƯỜI DÙNG - DÙNG CHUNG CHO TẤT CẢ TAB */}
+                <RootStack.Screen 
+                    name="ProfileScreen" 
+                    component={ProfileScreen}
+                    options={{
+                        presentation: 'card',
+                        animation: 'slide_from_right',
+                        gestureEnabled: true,
+                    }}
+                />
+                <RootStack.Screen 
+                    name="ListFollowScreen" 
+                    component={ListFollowScreen}
+                    options={{
+                        presentation: 'card',
+                        animation: 'slide_from_right',
+                        gestureEnabled: true,
+                    }}
+                />
+                <RootStack.Screen 
+                    name="IngredientsScreen" 
+                    component={IngredientsScreen}
+                    options={{
+                        presentation: 'card',
+                        animation: 'slide_from_right',
+                        gestureEnabled: true,
+                    }}
+                />
+                <RootStack.Screen 
+                    name="NotificationScreen" 
+                    component={NotificationScreen}
+                    options={{
+                        presentation: 'card',
+                        animation: 'slide_from_right',
+                        gestureEnabled: true,
+                    }}
                 />
             </RootStack.Navigator>
         </NavigationContainer>

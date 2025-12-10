@@ -37,8 +37,7 @@ export interface MyRecipe {
   name: string;
   description: string;
   difficulty: {
-    name: string;
-    value: number;
+    value: string;
   };
   cookTime: number;
   ration: number;
@@ -51,6 +50,7 @@ export interface MyRecipe {
   rating?: number;
   averageRating?: number;
   numberOfRatings?: number;
+  
 }
 
 export interface MyRecipeResponse {
@@ -99,8 +99,7 @@ export interface RecipeDetail {
   name: string;
   description: string;
   difficulty: {
-    name?: string;
-    value: string | number;
+    value: string;
   };
   cookTime: number;
   ration: number;
@@ -191,7 +190,6 @@ export type MyRecipesParams = {
   title?: string;
 };
 
-// NEW: Advanced search params
 export interface RecipeSearchParams {
   keyword?: string;
   pageNumber?: number;
@@ -204,7 +202,6 @@ export interface RecipeSearchParams {
   ingredientIds?: string[];
 }
 
-// NEW: Rating response type
 export interface RatingResponse {
   id: string;
   rating: number;
@@ -305,7 +302,6 @@ const buildRecipeFormData = async (
       if (step.images && step.images.length > 0) {
         step.images.forEach((img, imgIndex) => {
           if (img.image) {
-            // New image
             const uri = img.image;
             const filename =
               uri.split('/').pop() || `step_${stepIndex}_img_${imgIndex}.${getFileExtension(uri)}`;
@@ -319,7 +315,6 @@ const buildRecipeFormData = async (
               String(img.imageOrder)
             );
           } else if (isUpdate && img.id) {
-            // Existing image for update
             formData.append(
               `CookingSteps[${stepIndex}].Images[${imgIndex}].ExistingImageId`,
               img.id
@@ -581,7 +576,7 @@ export async function deleteRecipe(recipeId: string): Promise<void> {
   recipeCache.invalidate('myRecipes');
 }
 
-// ========== NEW: USER RECIPES ==========
+// ========== USER RECIPES ==========
 
 export async function getRecipesByUserName(
   userName: string,
@@ -604,7 +599,7 @@ export async function getRecipesByUserName(
   return result;
 }
 
-// ========== NEW: FAVORITE RECIPES ==========
+// ========== FAVORITE RECIPES ==========
 
 export async function getFavoriteRecipes(params?: {
   pageNumber?: number;
@@ -616,8 +611,8 @@ export async function getFavoriteRecipes(params?: {
   if (cached) return cached;
 
   const queryParams = buildQueryParams({
-    PageNumber: params?.pageNumber || 1,
-    PageSize: params?.pageSize || 10,
+    'PaginationParams.PageNumber': params?.pageNumber || 1,
+    'PaginationParams.PageSize': params?.pageSize || 10,
     ...(params?.keyword && { Keyword: params.keyword }),
   });
 
@@ -641,7 +636,7 @@ export async function removeFromFavorite(recipeId: string): Promise<void> {
   recipeCache.invalidate('favoriteRecipes');
 }
 
-// ========== NEW: SAVED RECIPES ==========
+// ========== SAVED RECIPES ==========
 
 export async function getSavedRecipes(params?: {
   pageNumber?: number;
@@ -653,8 +648,8 @@ export async function getSavedRecipes(params?: {
   if (cached) return cached;
 
   const queryParams = buildQueryParams({
-    PageNumber: params?.pageNumber || 1,
-    PageSize: params?.pageSize || 10,
+    'PaginationParams.PageNumber': params?.pageNumber || 1,
+    'PaginationParams.PageSize': params?.pageSize || 10,
     ...(params?.keyword && { Keyword: params.keyword }),
   });
 
@@ -678,7 +673,7 @@ export async function unsaveRecipe(recipeId: string): Promise<void> {
   recipeCache.invalidate('savedRecipes');
 }
 
-// ========== NEW: RECIPE HISTORY ==========
+// ========== RECIPE HISTORY ==========
 
 export async function getHistory(params?: {
   pageNumber?: number;
@@ -689,8 +684,8 @@ export async function getHistory(params?: {
   if (cached) return cached;
 
   const queryParams = buildQueryParams({
-    PageNumber: params?.pageNumber || 1,
-    PageSize: params?.pageSize || 10,
+    'PaginationParams.PageNumber': params?.pageNumber || 1,
+    'PaginationParams.PageSize': params?.pageSize || 10,
   });
 
   const endpoint = `/Recipe/history?${queryParams.toString()}`;
@@ -699,7 +694,7 @@ export async function getHistory(params?: {
   return result;
 }
 
-// ========== NEW: ADVANCED SEARCH ==========
+// ========== ADVANCED SEARCH ==========
 
 export async function searchRecipes(params?: RecipeSearchParams): Promise<MyRecipeResponse> {
   const cacheKey = `search_${JSON.stringify(params)}`;
@@ -708,15 +703,14 @@ export async function searchRecipes(params?: RecipeSearchParams): Promise<MyReci
 
   const queryParams = buildQueryParams({
     Keyword: params?.keyword || '',
-    PageNumber: params?.pageNumber || 1,
-    PageSize: params?.pageSize || 10,
+    'PaginationParams.PageNumber': params?.pageNumber || 1,
+    'PaginationParams.PageSize': params?.pageSize || 10,
     ...(params?.difficulty && { Difficulty: params.difficulty }),
     ...(params?.sortBy && { SortBy: params.sortBy }),
     ...(params?.ration !== undefined && { Ration: params.ration }),
     ...(params?.maxCookTime !== undefined && { MaxCookTime: params.maxCookTime }),
   });
 
-  // Add array params
   if (params?.labelIds && params.labelIds.length > 0) {
     params.labelIds.forEach((id, index) => {
       queryParams.append(`LabelIds[${index}]`, id);
@@ -735,47 +729,7 @@ export async function searchRecipes(params?: RecipeSearchParams): Promise<MyReci
   return result;
 }
 
-// ========== RATING ==========
-
-export async function rateRecipe(recipeId: string, rating: number): Promise<void> {
-  if (!recipeId) throw new Error('Recipe ID is required');
-  validateRating(rating);
-  await recipeHttpClient.request<void>(
-    `/Rating/${recipeId}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ rating }),
-    },
-    true
-  );
-  recipeCache.invalidate(`recipe_${recipeId}`);
-}
-
-export async function deleteRating(recipeId: string): Promise<void> {
-  if (!recipeId) throw new Error('Recipe ID is required');
-  await recipeHttpClient.request<void>(`/Rating/${recipeId}`, { method: 'DELETE' }, true);
-  recipeCache.invalidate(`recipe_${recipeId}`);
-}
-
-// ========== NEW: RECIPE RATINGS & FEEDBACK ==========
-
-export async function getRecipeRatings(
-  recipeId: string,
-  params?: { pageNumber?: number; pageSize?: number }
-): Promise<PaginatedRatingResponse> {
-  if (!recipeId) throw new Error('Recipe ID is required');
-
-  const queryParams = buildQueryParams({
-    PageNumber: params?.pageNumber || 1,
-    PageSize: params?.pageSize || 10,
-  });
-
-  const endpoint = `/Recipe/${recipeId}/rating?${queryParams.toString()}`;
-  return await recipeHttpClient.request<PaginatedRatingResponse>(endpoint, { method: 'GET' }, true);
-}
-
-// ========== NEW: COPY RECIPE ==========
+// ========== COPY RECIPE ==========
 
 export async function copyRecipe(
   parentId: string,
@@ -833,11 +787,6 @@ export default {
   
   // Search
   searchRecipes,
-  
-  // Rating
-  rateRecipe,
-  deleteRating,
-  getRecipeRatings,
   
   // Copy
   copyRecipe,

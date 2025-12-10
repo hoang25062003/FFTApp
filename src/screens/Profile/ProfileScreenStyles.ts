@@ -1,4 +1,3 @@
-// ProfileScreenStyles.ts
 import { StyleSheet, Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -198,6 +197,17 @@ export const localStyles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#FEE2E2',
     },
+    // ✅ NEW: Report button style
+    reportButton: {
+        width: 52,
+        height: 52,
+        borderRadius: 14,
+        backgroundColor: '#FFFBEB',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderWidth: 2,
+        borderColor: '#FEF3C7',
+    },
     
     contentSection: {
         paddingHorizontal: 20,
@@ -261,6 +271,7 @@ export const localStyles = StyleSheet.create({
         textAlign: 'right',
     },
     
+    // --- STYLE CHO PHẦN RECIPE & TABS MỚI ---
     recipeSection: {
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
@@ -271,6 +282,43 @@ export const localStyles = StyleSheet.create({
         shadowRadius: 8,
         elevation: 3,
     },
+    
+    // Styles cho Tab Switcher
+    tabContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#F3F4F6', // Màu nền xám nhạt của thanh chứa
+        borderRadius: 25,           // Bo tròn 2 đầu (pill shape)
+        padding: 4,
+        marginBottom: 20,
+    },
+    tabButton: {
+        flex: 1,
+        flexDirection: 'row',
+        paddingVertical: 10,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    activeTabButton: {
+        backgroundColor: BRAND_COLOR,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    activeTabText: {
+        color: '#FFFFFF',
+    },
+    inactiveTabText: {
+        color: '#6B7280',
+    },
+    // ----------------------------------------
+
     recipeSectionHeader: {
         marginBottom: 16,
     },

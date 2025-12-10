@@ -1,4 +1,3 @@
-// FILE: src/navigation/NavigationTypes.ts
 
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthRoutes } from './RouteNames'; 
@@ -17,8 +16,14 @@ export type AuthStackParamList = {
 export type RootStackParamList = {
     AuthFlow: undefined; 
     MainAppTabs: undefined;
-    CreateRecipe: undefined; // ✅ THÊM DÒNG NÀY
-    ViewDietRestriction: undefined;
+    CreateRecipe: undefined;
+    DietRestrictionFlow: undefined;
+    // ✅ THÊM 2 SCREEN MỚI
+    ViewRecipeScreen: { recipeId: string };
+    ProfileScreen: { username: string };
+    ListFollowScreen: { initialTab?: 'Followers' | 'Following' };
+    IngredientsScreen: undefined;
+    NotificationScreen: undefined;
 };
 
 // --- PROFILE STACK PARAM LIST ---
@@ -32,19 +37,23 @@ export type HealthGoalStackParamList = {
     HealthGoalMain: undefined;
     HealthGoalCreate: undefined;
 };
-export type ScanlStackParamList = {
-    ScanMain: undefined;   // Màn hình chính (Danh sách)
-    ScanResult: undefined; // Màn hình tạo mới
+
+export type ScanStackParamList = {
+    ScanMain: undefined;
+    ScanResult: undefined;
 };
+
 export type HealthMetricStackParamList = {
     ViewHealthMetricMain: undefined;
     CreateHealthMetric: undefined;
-    EditHealthMetric: undefined;
+    EditHealthMetric: { metricId: string };
 };
+
 export type DietRestrictionStackParamList = {
     ViewDietRestrictionMain: undefined;
     CreateDietRestriction: undefined;
 };
+
 // --- AUTH SCREEN TYPES ---
 export type LoginScreenNavigationProps = NativeStackScreenProps<AuthStackParamList, typeof AuthRoutes.Login>;
 export type RegisterScreenNavigationProps = NativeStackScreenProps<AuthStackParamList, typeof AuthRoutes.Register>;

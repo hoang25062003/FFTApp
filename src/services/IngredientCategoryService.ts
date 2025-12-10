@@ -1,3 +1,5 @@
+// FILE: src/services/IngredientCategoryService.ts
+
 import { API_BASE_URL } from '@env';
 import { TokenManager, ApiException } from './AuthService';
 
@@ -10,69 +12,15 @@ const REQUEST_TIMEOUT = 30000; // 30 seconds
 // ============================================
 // TYPES
 // ============================================
-
-export type UserProfile = {
+export type IngredientCategory = {
     id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    gender: 'Male' | 'Female'; 
-    avatarUrl: string | null;
-    followersCount: number;
-    followingCount: number;
-    isFollowing: boolean;
-    address: string | null;
-    bio: string | null;
-    dateOfBirth: string | null; 
-};
-
-export type UpdateProfilePayload = {
-    firstName?: string;
-    lastName?: string;
-    gender?: 'Male' | 'Female'; 
-    address?: string | null;
-    bio?: string | null;
-    dateOfBirth?: string | null; 
-    avatar?: string; 
+    name: string;
 };
 
 // ============================================
-// UTILITIES
+// HTTP CLIENT FOR INGREDIENT CATEGORY
 // ============================================
-
-const getFileExtension = (uri: string): string => {
-    const match = uri.match(/\.([^./?#]+)(?:[?#]|$)/i);
-    return match ? match[1] : 'jpg';
-};
-
-const getMimeType = (uri: string): string => {
-    const ext = getFileExtension(uri).toLowerCase();
-    const mimeTypes: Record<string, string> = {
-        jpg: 'image/jpeg',
-        jpeg: 'image/jpeg',
-        png: 'image/png',
-        gif: 'image/gif',
-        webp: 'image/webp',
-        heic: 'image/heic',
-        heif: 'image/heif',
-    };
-    return mimeTypes[ext] || 'image/jpeg';
-};
-
-export function getGenderDisplay(gender: string | null | undefined): string {
-    if (!gender) return 'Chưa xác định';
-    const upperCaseGender = gender.toUpperCase(); 
-    switch (upperCaseGender) {
-        case 'MALE': return 'Nam';
-        case 'FEMALE': return 'Nữ';
-        default: return 'Không xác định'; 
-    }
-}
-
-// ============================================
-// HTTP CLIENT
-// ============================================
-class UserHttpClient {
+class IngredientCategoryHttpClient {
     private baseUrl: string;
     private timeout: number;
 
@@ -108,13 +56,11 @@ class UserHttpClient {
     ): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`;
 
-        const headers: Record<string, string> = {};
-
-        const isFormData = options.body instanceof FormData;
-
-        if (!isFormData) {
-            headers['Content-Type'] = 'application/json';
-        }
+        console.log(`[INGREDIENT CATEGORY HTTP CLIENT] Sending request to: ${url}`);
+        
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+        };
 
         if (options.headers) {
             Object.assign(headers, options.headers as Record<string, string>);
@@ -124,8 +70,9 @@ class UserHttpClient {
             const token = await TokenManager.getToken();
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
+                console.log('[INGREDIENT CATEGORY HTTP CLIENT] Authorization Token included.');
             } else {
-                throw new ApiException('Authorization token is missing. Please log in.', 401);
+                console.warn('[INGREDIENT CATEGORY HTTP CLIENT] Authorization requested but token is missing.');
             }
         }
 
@@ -163,63 +110,57 @@ class UserHttpClient {
     }
 }
 
-const userHttpClient = new UserHttpClient(BASE_URL);
+// Create HTTP client instance
+const ingredientCategoryHttpClient = new IngredientCategoryHttpClient(BASE_URL);
 
 // ============================================
-// SERVICE METHODS
+// INGREDIENT CATEGORY SERVICE METHODS
 // ============================================
 
-export async function getUserProfile(): Promise<UserProfile> {
-    return userHttpClient.request<UserProfile>(
-        '/user/profile', 
+/**
+ * Get all ingredient categories (no pagination)
+ * GET /api/IngredientCategory
+ * Returns: IngredientCategory[]
+ */
+export async function getIngredientCategories(): Promise<IngredientCategory[]> {
+    return ingredientCategoryHttpClient.request<IngredientCategory[]>(
+        `/IngredientCategory`, 
         { method: 'GET' }, 
         true
     );
 }
 
-export async function updateUserProfile(data: FormData | UpdateProfilePayload): Promise<UserProfile> {
-    let body: BodyInit;
-    
-    if (data instanceof FormData) {
-        body = data;
-    } else {
-        if (data.avatar && typeof data.avatar === 'string') {
-            const formData = new FormData();
-            
-            const uri = data.avatar;
-            const filename = uri.split('/').pop() || `avatar.${getFileExtension(uri)}`;
-            const type = getMimeType(uri);
-
-            formData.append('avatar', {
-                uri: uri,
-                name: filename,
-                type: type,
-            } as any);
-
-            Object.entries(data).forEach(([key, value]) => {
-                if (key !== 'avatar' && value !== undefined && value !== null) {
-                    formData.append(key, String(value));
-                }
-            });
-
-            body = formData;
-        } else {
-            body = JSON.stringify(data);
-        }
-    }
-
-    return userHttpClient.request<UserProfile>(
-        '/user/profile', 
-        { 
-            method: 'PUT',
-            body: body,
-        }, 
+/**
+ * Get ingredient category by ID
+ * GET /api/IngredientCategory/{id}
+ */
+export async function getIngredientCategoryById(id: string): Promise<IngredientCategory> {
+    return ingredientCategoryHttpClient.request<IngredientCategory>(
+        `/IngredientCategory/${id}`,
+        { method: 'GET' },
         true
     );
 }
 
+/**
+ * Search ingredient categories by name (client-side filtering)
+ */
+export async function searchIngredientCategories(keyword: string): Promise<IngredientCategory[]> {
+    const categories = await getIngredientCategories();
+    
+    if (!keyword || keyword.trim() === '') {
+        return categories;
+    }
+
+    const lowerKeyword = keyword.toLowerCase().trim();
+    return categories.filter(category => 
+        category.name.toLowerCase().includes(lowerKeyword)
+    );
+}
+
+// Export everything
 export default {
-    getUserProfile,
-    updateUserProfile,
-    getGenderDisplay, 
+    getIngredientCategories,
+    getIngredientCategoryById,
+    searchIngredientCategories,
 };

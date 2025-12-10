@@ -1,88 +1,218 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  Alert,
+  ScrollView,
+  SafeAreaView,
   StatusBar,
-  ActivityIndicator,
   RefreshControl,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import {
-  Plus,
-  Target,
-  Clock,
-  Edit2,
-  Trash2,
-  ChevronRight,
-  Zap,
-  CheckCircle2,
-  AlertCircle
-} from 'lucide-react-native';
-import { useFocusEffect } from '@react-navigation/native'; // Cần cài @react-navigation/native
-
-// Import Service
-import healthGoalService, { 
-    CustomHealthGoalResponse, 
-    UserHealthGoalResponse 
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import HeaderApp from '../../components/HeaderApp';
+import { styles, cardStyles, BRAND_COLOR } from './ViewGoalScreenStyles';
+import { 
+  healthGoalService, 
+  UserHealthGoalResponse,
+  NutrientTarget,
 } from '../../services/HealthGoalService';
 
-export default function ViewCustomGoalScreen({ navigation }: { navigation?: any }) {
-  // --- STATE ---
-  const [loading, setLoading] = useState<boolean>(true);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
-  
-  // Data State
-  const [activeGoal, setActiveGoal] = useState<UserHealthGoalResponse | null>(null);
-  const [myGoals, setMyGoals] = useState<CustomHealthGoalResponse[]>([]);
+// --- Component Card Thư Viện ---
+const HealthGoalCard: React.FC<{
+  id: string;
+  name: string;
+  description?: string;
+  targets: NutrientTarget[];
+  isCustom: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onSelect: () => void;
+}> = ({ 
+  id,
+  name, 
+  description, 
+  targets,
+  isCustom,
+  onEdit,
+  onDelete,
+  onSelect
+}) => {
+  const [expanded, setExpanded] = useState(false);
 
-  // --- API CALLS ---
+  const getPriorityConfig = (weight?: number) => {
+    if (!weight) return { bg: '#F3F4F6', text: '#6B7280', label: 'N/A' };
+    if (weight >= 0.7) return { bg: '#FEE2E2', text: '#EF4444', label: 'Cao' };
+    if (weight >= 0.4) return { bg: '#FEF9C3', text: '#F59E0B', label: 'TB' };
+    return { bg: '#ECFDF5', text: '#10B981', label: 'Thấp' };
+  };
 
-  const fetchData = useCallback(async () => {
-    try {
-      // Gọi song song 2 API để tối ưu tốc độ
-      const [activeData, customData] = await Promise.all([
-        healthGoalService.getCurrentActiveGoal(),
-        healthGoalService.getMyCustomGoals(),
-      ]);
-
-      setActiveGoal(activeData);
-      setMyGoals(customData);
-    } catch (error) {
-      console.error('Fetch error:', error);
-      // Không Alert lỗi ở đây để tránh spam khi user mất mạng, chỉ log
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  const formatValue = (target: NutrientTarget) => {
+    if (target.minValue === target.maxValue) {
+      return `${target.minValue}${target.targetType || ''}`;
     }
-  }, []);
+    return `${target.minValue}-${target.maxValue}${target.targetType || ''}`;
+  };
 
-  // Tự động load lại dữ liệu mỗi khi màn hình được focus (VD: quay lại từ màn Create)
-  useFocusEffect(
-    useCallback(() => {
-      fetchData();
-    }, [fetchData])
+  return (
+    <View style={cardStyles.card}>
+      <View style={cardStyles.headerRow}>
+        <View style={cardStyles.infoContainer}>
+          <Text style={cardStyles.goalName}>{name}</Text>
+          {description && <Text style={cardStyles.goalDesc}>{description}</Text>}
+        </View>
+        <View style={cardStyles.actions}>
+          {isCustom && (
+            <>
+              <TouchableOpacity style={cardStyles.iconButton} onPress={onEdit}>
+                <Icon name="pencil" size={16} color={BRAND_COLOR} />
+              </TouchableOpacity>
+              <TouchableOpacity style={cardStyles.iconButtonDanger} onPress={onDelete}>
+                <Icon name="delete-outline" size={16} color="#EF4444" />
+              </TouchableOpacity>
+            </>
+          )}
+          <TouchableOpacity 
+            onPress={() => setExpanded(!expanded)} 
+            style={cardStyles.expandBtn}
+          >
+            <Icon 
+              name={expanded ? 'chevron-up' : 'chevron-down'} 
+              size={18} 
+              color="#6B7280" 
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      {expanded && (
+        <View style={cardStyles.detailsContainer}>
+          <View style={cardStyles.divider} />
+          <View style={cardStyles.sectionHeader}>
+            <Icon name="clipboard-list-outline" size={18} color={BRAND_COLOR} />
+            <Text style={cardStyles.detailLabel}>CHỈ SỐ DINH DƯỠNG</Text>
+          </View>
+          <View style={cardStyles.nutrientList}>
+            {targets.map((item, index) => {
+              const pConfig = getPriorityConfig(item.weight);
+              return (
+                <View key={index} style={cardStyles.nutrientItem}>
+                  <View style={cardStyles.nutrientIconBg}>
+                    <Icon name="food-apple" size={20} color={BRAND_COLOR} />
+                  </View>
+                  <View style={{flex: 1}}>
+                    <Text style={cardStyles.nutrientLabel}>{item.name}</Text>
+                    <Text style={cardStyles.nutrientValue}>{formatValue(item)}</Text>
+                  </View>
+                  <View style={[cardStyles.priorityBadge, { backgroundColor: pConfig.bg }]}>
+                    <Text style={[cardStyles.priorityText, { color: pConfig.text }]}>
+                      {pConfig.label}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          <TouchableOpacity 
+            style={{
+              backgroundColor: BRAND_COLOR,
+              paddingVertical: 12,
+              borderRadius: 8,
+              marginTop: 12,
+              alignItems: 'center',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+            onPress={onSelect}
+          >
+            <Icon name="check-circle" size={18} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 14 }}>
+              Chọn mục tiêu này
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
+};
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
+const ViewGoalScreen: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'Personal' | 'Expert'>('Personal');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentGoal, setCurrentGoal] = useState<UserHealthGoalResponse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Unified goals list from getListGoal API
+  const [allGoals, setAllGoals] = useState<UserHealthGoalResponse[]>([]);
+  const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
+
+  // Fetch current active goal
+  const fetchCurrentGoal = async () => {
+    try {
+      setIsLoading(true);
+      const goal = await healthGoalService.getCurrentActiveGoal();
+      setCurrentGoal(goal);
+    } catch (error: any) {
+      console.error('Error fetching current goal:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // --- HANDLERS ---
-
-  const handleCreateNew = () => {
-    // Điều hướng sang màn hình tạo mới
-    navigation?.navigate('CreateGoalScreen');
+  // Fetch all goals (custom + system) using getListGoal
+  const fetchAllGoals = async () => {
+    try {
+      setIsLoadingLibrary(true);
+      const goals = await healthGoalService.getListGoal();
+      setAllGoals(goals);
+    } catch (error: any) {
+      console.error('Error fetching goals:', error);
+      Alert.alert('Lỗi', 'Không thể tải danh sách mục tiêu');
+    } finally {
+      setIsLoadingLibrary(false);
+    }
   };
 
-  const handleDelete = (id: string, name: string) => {
+  // Remove current active goal
+  const handleRemoveCurrentGoal = async () => {
     Alert.alert(
-      'Xóa mục tiêu',
-      `Bạn có chắc chắn muốn xóa "${name}" không?`,
+      'Xác nhận',
+      'Bạn có chắc chắn muốn hủy bỏ mục tiêu hiện tại?',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel',
+        },
+        {
+          text: 'Xác nhận',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsDeleting(true);
+              await healthGoalService.removeCurrentActiveGoal();
+              setCurrentGoal(null);
+              Alert.alert('Thành công', 'Đã hủy mục tiêu hiện tại');
+            } catch (error: any) {
+              console.error('Error removing goal:', error);
+              Alert.alert('Lỗi', error.message || 'Không thể hủy mục tiêu');
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // Delete custom goal
+  const handleDeleteCustomGoal = async (goalId: string) => {
+    Alert.alert(
+      'Xác nhận xóa',
+      'Bạn có chắc chắn muốn xóa mục tiêu này?',
       [
         { text: 'Hủy', style: 'cancel' },
         {
@@ -90,14 +220,12 @@ export default function ViewCustomGoalScreen({ navigation }: { navigation?: any 
           style: 'destructive',
           onPress: async () => {
             try {
-              setLoading(true);
-              await healthGoalService.deleteCustomGoal(id);
-              // Xóa thành công thì load lại list
-              await fetchData(); 
-              Alert.alert('Thành công', 'Đã xóa mục tiêu.');
-            } catch (error) {
-              setLoading(false);
-              Alert.alert('Lỗi', 'Không thể xóa mục tiêu này.');
+              await healthGoalService.deleteCustom(goalId);
+              Alert.alert('Thành công', 'Đã xóa mục tiêu');
+              fetchAllGoals(); // Refresh the list
+            } catch (error: any) {
+              console.error('Error deleting goal:', error);
+              Alert.alert('Lỗi', error.message || 'Không thể xóa mục tiêu');
             }
           },
         },
@@ -105,550 +233,305 @@ export default function ViewCustomGoalScreen({ navigation }: { navigation?: any 
     );
   };
 
-  const handleSetActive = (goal: CustomHealthGoalResponse) => {
-    // Kiểm tra nếu đang active mục tiêu này rồi
-    if (activeGoal?.customHealthGoalId === goal.id) {
-        Alert.alert("Thông báo", "Mục tiêu này đang được áp dụng.");
-        return;
-    }
+  // Select goal as active
+  const handleSelectGoal = async (goal: UserHealthGoalResponse) => {
+    // Determine if it's a custom or system goal
+    const type = goal.customHealthGoalId ? 'CUSTOM' : 'SYSTEM';
+    const goalId = goal.customHealthGoalId || goal.healthGoalId || '';
 
     Alert.alert(
-      'Áp dụng mục tiêu',
-      `Bạn muốn đặt "${goal.name}" làm mục tiêu theo dõi trong 30 ngày tới?`,
+      'Chọn mục tiêu',
+      'Bạn có muốn đặt mục tiêu này làm mục tiêu hiện tại?',
       [
         { text: 'Hủy', style: 'cancel' },
         {
-          text: 'Đồng ý',
+          text: 'Chọn',
           onPress: async () => {
             try {
-              setLoading(true);
-              
-              // Logic tính ngày hết hạn (VD: +30 ngày)
-              const now = new Date();
-              now.setDate(now.getDate() + 30);
-              const expiredAtUtc = now.toISOString();
-
-              await healthGoalService.setActiveGoal(goal.id, expiredAtUtc);
-              
-              await fetchData();
-              Alert.alert('Thành công', 'Đã cập nhật mục tiêu hiện tại.');
-            } catch (error) {
-              setLoading(false);
-              Alert.alert('Lỗi', 'Không thể kích hoạt mục tiêu này.');
+              await healthGoalService.setAsActiveGoal(goalId, type);
+              Alert.alert('Thành công', 'Đã cập nhật mục tiêu hiện tại');
+              fetchCurrentGoal();
+            } catch (error: any) {
+              console.error('Error setting active goal:', error);
+              Alert.alert('Lỗi', error.message || 'Không thể cập nhật mục tiêu');
             }
           },
         },
       ]
     );
   };
-  
-  const handleRemoveActive = () => {
-      if (!activeGoal) return;
-      
-      // Ở đây activeGoal không có ID của record UserHealthGoal, 
-      // nhưng API removeActiveGoal cần ID. 
-      // *Lưu ý*: Tuỳ thuộc vào backend, nếu backend cần ID của UserHealthGoal, 
-      // bạn cần chắc chắn UserHealthGoalResponse trả về ID đó.
-      // Giả sử ActiveGoal có field `id` là ID của record quan hệ user-goal.
-      // Nếu không, bạn cần hỏi lại backend endpoint xoá active goal.
-      
-      // Giả định: API removeActiveGoal nhận ID của UserHealthGoal record
-      // Tuy nhiên trong UserHealthGoalResponse type cũ chưa có field `id` của record đó.
-      // Nếu API backend là DELETE /api/UserHealthGoal/current thì không cần ID.
-      // Nếu backend cần ID, ta cần update Type. 
-      // Tạm thời giả định ta truyền activeGoal.healthGoalId hoặc customHealthGoalId để backend xử lý logic tìm và xoá.
-      
-      // FIX logic dựa trên Service: removeActiveGoal(id: string). 
-      // Ta cần ID của UserHealthGoal record. Nếu response không trả về, ta không xóa được chính xác.
-      // Tạm thời gọi endpoint xoá với ID của customGoal (Backend cần handle logic này)
-      const targetId = activeGoal.customHealthGoalId || activeGoal.healthGoalId;
 
-      Alert.alert(
-          'Dừng theo dõi',
-          'Bạn có muốn dừng mục tiêu hiện tại?',
-          [
-              { text: 'Hủy', style: 'cancel'},
-              {
-                  text: 'Dừng',
-                  style: 'destructive',
-                  onPress: async () => {
-                      try {
-                          if(targetId) {
-                            setLoading(true);
-                            // Lưu ý: check lại logic backend chỗ này
-                            await healthGoalService.removeActiveGoal(targetId); 
-                            await fetchData();
-                          }
-                      } catch (error) {
-                          setLoading(false);
-                          Alert.alert('Lỗi', 'Không thể dừng mục tiêu.');
-                      }
-                  }
-              }
-          ]
-      )
-  }
-
-  // Helper formats
-  const formatDate = (dateString?: string) => {
-      if(!dateString) return 'N/A';
-      try {
-          return new Date(dateString).toLocaleDateString('vi-VN');
-      } catch (e) {
-          return dateString;
-      }
+  // Calculate remaining days
+  const calculateRemainingDays = (expiredAtUtc?: string): number | null => {
+    if (!expiredAtUtc) return null;
+    const now = new Date();
+    const expireDate = new Date(expiredAtUtc);
+    const diffTime = expireDate.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
   };
 
-  // Render Loading Lần đầu
-  if (loading && !refreshing && myGoals.length === 0 && !activeGoal) {
-      return (
-          <SafeAreaView style={[styles.container, styles.centerContent]}>
-              <ActivityIndicator size="large" color="#84cc16" />
-              <Text style={{marginTop: 12, color: '#6b7280'}}>Đang tải dữ liệu...</Text>
-          </SafeAreaView>
-      );
-  }
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await Promise.all([
+      fetchCurrentGoal(),
+      fetchAllGoals()
+    ]);
+    setIsRefreshing(false);
+  };
+
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return 'Không giới hạn';
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    return `${day}/${month}/${date.getFullYear()}`;
+  };
+
+  // Format nutrient value for display
+  const formatNutrientValue = (target: NutrientTarget): string => {
+    if (target.minValue === target.maxValue) {
+      return `${target.minValue}`;
+    }
+    return `${target.minValue}-${target.maxValue}`;
+  };
+
+  // Get primary nutrient (first one with highest weight)
+  const getPrimaryNutrient = (targets: NutrientTarget[]): NutrientTarget | null => {
+    if (!targets || targets.length === 0) return null;
+    const sorted = [...targets].sort((a, b) => (b.weight || 0) - (a.weight || 0));
+    return sorted[0];
+  };
+
+  // Filter goals based on active tab
+  const getFilteredGoals = (): UserHealthGoalResponse[] => {
+    if (activeTab === 'Personal') {
+      // Custom goals have customHealthGoalId
+      return allGoals.filter(goal => goal.customHealthGoalId);
+    } else {
+      // System goals have healthGoalId
+      return allGoals.filter(goal => goal.healthGoalId);
+    }
+  };
+
+  useEffect(() => {
+    fetchCurrentGoal();
+    fetchAllGoals();
+  }, []);
+
+  const remainingDays = calculateRemainingDays(currentGoal?.expiredAtUtc);
+  const primaryNutrient = currentGoal ? getPrimaryNutrient(currentGoal.targets) : null;
+  const currentLibrary = getFilteredGoals();
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      
-      {/* HEADER */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>Quản Lý Mục Tiêu</Text>
-          <Text style={styles.headerSubtitle}>Theo dõi lộ trình sức khỏe của bạn</Text>
-        </View>
-        <TouchableOpacity style={styles.profileAvatar} onPress={() => fetchData()}>
-             {/* Nút refresh phụ hoặc avatar */}
-            <Text style={{color: '#fff', fontWeight: 'bold'}}>ME</Text>
-        </TouchableOpacity>
-      </View>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <HeaderApp isHome={false} />
 
       <ScrollView 
-        contentContainerStyle={styles.scrollContent} 
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 110 }}
         refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#84cc16']} />
+          <RefreshControl 
+            refreshing={isRefreshing} 
+            onRefresh={handleRefresh}
+            colors={[BRAND_COLOR]}
+            tintColor={BRAND_COLOR}
+          />
         }
       >
-        
-        {/* SECTION 1: ACTIVE GOAL */}
-        <View style={styles.sectionHeaderRow}>
-             <Text style={styles.sectionTitle}>Đang Theo Dõi</Text>
-             {activeGoal && (
-                 <TouchableOpacity onPress={handleRemoveActive}>
-                     <Text style={styles.dangerLink}>Dừng theo dõi</Text>
-                 </TouchableOpacity>
-             )}
-        </View>
-        
-        {activeGoal ? (
-          <View style={styles.activeCard}>
-            <View style={styles.activeCardBgDecor} />
-            <View style={styles.activeCardContent}>
-                <View style={styles.activeHeader}>
-                    <View style={styles.badgeContainer}>
-                        <Zap size={14} color="#fff" fill="#fff" />
-                        <Text style={styles.badgeText}>ACTIVE</Text>
-                    </View>
-                    <Text style={styles.expiryText}>
-                        {/* Mock ngày hết hạn vì response active có thể chưa trả về ngày hết hạn */}
-                        30 ngày còn lại
-                    </Text>
+        <View style={styles.heroSection}>
+          <View style={styles.heroBackground}>
+            <View style={styles.decorativeCircle1} />
+            <View style={styles.decorativeCircle2} />
+            <View style={styles.heroContent}>
+              <View>
+                <Text style={styles.heroSubtitle}>Quản lý dinh dưỡng</Text>
+                <Text style={styles.heroTitle}>Mục Tiêu Của Bạn</Text>
+              </View>
+              <TouchableOpacity style={styles.createHeaderBtn}>
+                <View style={styles.iconCircle}>
+                  <Icon name="plus" size={16} color={BRAND_COLOR} />
                 </View>
-
-                <Text style={styles.activeGoalName}>{activeGoal.name}</Text>
-                <Text style={styles.activeGoalDesc} numberOfLines={2}>
-                    {activeGoal.description || 'Hãy cố gắng hoàn thành các chỉ số dinh dưỡng hàng ngày.'}
-                </Text>
-
-                {/* List Targets Preview (Optional) */}
-                <View style={styles.targetsPreview}>
-                    {activeGoal.targets.slice(0, 3).map((t, i) => (
-                        <Text key={i} style={styles.targetTag}>
-                            {t.name}: {t.minValue}-{t.maxValue}
-                        </Text>
-                    ))}
-                    {activeGoal.targets.length > 3 && <Text style={styles.targetTag}>...</Text>}
-                </View>
-
-                <TouchableOpacity style={styles.detailButton}>
-                    <Text style={styles.detailButtonText}>Xem báo cáo chi tiết</Text>
-                    <ChevronRight size={16} color="#4d7c0f" />
-                </TouchableOpacity>
+                <Text style={styles.createBtnText}>Tạo mới</Text>
+              </TouchableOpacity>
             </View>
           </View>
+        </View>
+
+        {/* Current Goal Section */}
+        {isLoading ? (
+          <View style={[styles.currentGoalCard, { alignItems: 'center', justifyContent: 'center', minHeight: 200 }]}>
+            <ActivityIndicator size="large" color={BRAND_COLOR} />
+            <Text style={{ marginTop: 12, color: '#6B7280' }}>Đang tải...</Text>
+          </View>
+        ) : currentGoal ? (
+          <View style={styles.currentGoalCard}>
+            <View style={styles.cardHeader}>
+              <View style={styles.statusRow}>
+                <View style={styles.statusIconContainer}>
+                  <Icon name="check-circle" size={20} color={BRAND_COLOR} />
+                </View>
+                <View>
+                  <Text style={styles.statusLabel}>MỤC TIÊU HIỆN TẠI</Text>
+                  <Text style={styles.goalTitle}>{currentGoal.name}</Text>
+                </View>
+              </View>
+              <TouchableOpacity 
+                style={styles.deleteIconButton}
+                onPress={handleRemoveCurrentGoal}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#EF4444" />
+                ) : (
+                  <Icon name="close-circle-outline" size={22} color="#EF4444" />
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {currentGoal.description && (
+              <Text style={{ fontSize: 14, color: '#6B7280', marginTop: 8, marginBottom: 12 }}>
+                {currentGoal.description}
+              </Text>
+            )}
+
+            {remainingDays !== null && (
+              <View style={styles.validityBanner}>
+                <View style={styles.validityHeader}>
+                  <Icon name="calendar-clock" size={20} color={BRAND_COLOR} />
+                  <Text style={styles.validityLabel}>Thời hạn còn lại</Text>
+                </View>
+                <View style={styles.validityContent}>
+                  <Text style={styles.validityValue}>
+                    {remainingDays === 0 ? 'Hết hạn' : `${remainingDays} ngày`}
+                  </Text>
+                  <Text style={styles.validityDate}>
+                    Hết hạn: {formatDate(currentGoal.expiredAtUtc)}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {primaryNutrient && (
+              <View style={styles.metricsSection}>
+                <View style={styles.sectionHeader}>
+                  <Icon name="chart-line" size={18} color={BRAND_COLOR} />
+                  <Text style={styles.sectionLabel}>CHỈ SỐ CHÍNH</Text>
+                </View>
+                <View style={styles.metricBox}>
+                  <View style={styles.metricIconBg}>
+                    <Icon name="water" size={22} color="#3B82F6" />
+                  </View>
+                  <View style={{flex: 1}}>
+                    <Text style={styles.metricName}>{primaryNutrient.name}</Text>
+                    <Text style={styles.metricValue}>
+                      {formatNutrientValue(primaryNutrient)}
+                      {primaryNutrient.targetType || ''}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            )}
+          </View>
         ) : (
-          <View style={styles.emptyActiveCard}>
-            <AlertCircle size={32} color="#9ca3af" />
-            <Text style={styles.emptyText}>Bạn chưa áp dụng mục tiêu nào.</Text>
-            <Text style={styles.emptySubText}>Chọn từ danh sách bên dưới hoặc tạo mới.</Text>
+          <View style={[styles.currentGoalCard, { alignItems: 'center', paddingVertical: 40 }]}>
+            <Icon name="target-variant" size={48} color="#D1D5DB" />
+            <Text style={{ fontSize: 16, color: '#6B7280', marginTop: 12, fontWeight: '500' }}>
+              Chưa có mục tiêu nào
+            </Text>
+            <Text style={{ fontSize: 14, color: '#9CA3AF', marginTop: 4 }}>
+              Chọn hoặc tạo mục tiêu mới để bắt đầu
+            </Text>
           </View>
         )}
 
-        {/* SECTION 2: CREATE NEW */}
-        <TouchableOpacity style={styles.createButton} onPress={handleCreateNew}>
-            <View style={styles.createIconBg}>
-                <Plus size={24} color="#fff" />
+        <View style={styles.librarySection}>
+          <View style={styles.libraryHeader}>
+            <View style={styles.libraryTitleRow}>
+              <Icon name="library-shelves" size={22} color={BRAND_COLOR} />
+              <Text style={styles.libraryTitle}>Thư viện mục tiêu</Text>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{currentLibrary.length}</Text>
+              </View>
             </View>
-            <View style={{flex: 1}}>
-                <Text style={styles.createBtnTitle}>Tạo Mục Tiêu Mới</Text>
-                <Text style={styles.createBtnSub}>Tùy chỉnh theo nhu cầu cá nhân</Text>
+          </View>
+
+          <View style={styles.tabCard}>
+            <View style={styles.tabContainer}>
+              <TouchableOpacity 
+                style={[styles.tabItem, activeTab === 'Personal' && styles.activeTabItem]} 
+                onPress={() => setActiveTab('Personal')}
+              >
+                <Icon 
+                  name="account" 
+                  size={18} 
+                  color={activeTab === 'Personal' ? '#FFFFFF' : '#6B7280'} 
+                />
+                <Text style={[styles.tabText, activeTab === 'Personal' && styles.activeTabText]}>
+                  Cá nhân
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tabItem, activeTab === 'Expert' && styles.activeTabItem]} 
+                onPress={() => setActiveTab('Expert')}
+              >
+                <Icon 
+                  name="doctor" 
+                  size={18} 
+                  color={activeTab === 'Expert' ? '#FFFFFF' : '#6B7280'} 
+                />
+                <Text style={[styles.tabText, activeTab === 'Expert' && styles.activeTabText]}>
+                  Chuyên gia
+                </Text>
+              </TouchableOpacity>
             </View>
-            <ChevronRight size={20} color="#d1d5db" />
-        </TouchableOpacity>
+          </View>
 
-        {/* SECTION 3: MY GOALS LIST */}
-        <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Danh Sách Của Tôi ({myGoals.length})</Text>
-        </View>
-
-        <View style={styles.listContainer}>
-          {myGoals.map((item) => {
-             const isActive = activeGoal?.customHealthGoalId === item.id;
-             return (
-                <View key={item.id} style={[styles.goalCard, isActive && styles.goalCardActiveBorder]}>
+          {/* Library content */}
+          {isLoadingLibrary ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+              <ActivityIndicator size="large" color={BRAND_COLOR} />
+              <Text style={{ marginTop: 12, color: '#6B7280' }}>Đang tải...</Text>
+            </View>
+          ) : currentLibrary.length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+              <Icon name="folder-open-outline" size={48} color="#D1D5DB" />
+              <Text style={{ fontSize: 16, color: '#6B7280', marginTop: 12, fontWeight: '500' }}>
+                Chưa có mục tiêu nào
+              </Text>
+              <Text style={{ fontSize: 14, color: '#9CA3AF', marginTop: 4 }}>
+                {activeTab === 'Personal' 
+                  ? 'Tạo mục tiêu cá nhân của bạn' 
+                  : 'Chưa có mục tiêu chuyên gia nào'}
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.cardsContainer}>
+              {currentLibrary.map((item) => {
+                const isCustomGoal = !!item.customHealthGoalId;
+                const goalId = item.customHealthGoalId || item.healthGoalId || item.id;
                 
-                {/* Card Info */}
-                <View style={styles.goalCardBody}>
-                    <View style={styles.goalIcon}>
-                        <Target size={22} color={isActive ? "#65a30d" : "#6b7280"} />
-                    </View>
-                    <View style={{flex: 1}}>
-                        <View style={{flexDirection:'row', alignItems:'center', gap: 6}}>
-                            <Text style={styles.goalName} numberOfLines={1}>{item.name}</Text>
-                            {isActive && <CheckCircle2 size={14} color="#65a30d" fill="#ecfccb"/>}
-                        </View>
-                        <Text style={styles.goalDesc} numberOfLines={2}>
-                            {item.description || "Không có mô tả"}
-                        </Text>
-                        <View style={styles.metaRow}>
-                            <Text style={styles.metaText}>{item.targets.length} chỉ số dinh dưỡng</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Card Actions */}
-                <View style={styles.cardFooter}>
-                    <TouchableOpacity 
-                        style={styles.actionButton} 
-                        onPress={() => handleSetActive(item)}
-                        disabled={isActive}
-                    >
-                        {isActive ? (
-                            <Text style={[styles.actionText, {color:'#65a30d'}]}>Đang áp dụng</Text>
-                        ) : (
-                            <Text style={styles.actionText}>Áp dụng</Text>
-                        )}
-                    </TouchableOpacity>
-
-                    <View style={styles.divider} />
-
-                    <TouchableOpacity style={styles.actionButton} onPress={() => handleDelete(item.id, item.name)}>
-                        <Text style={[styles.actionText, {color: '#ef4444'}]}>Xóa</Text>
-                    </TouchableOpacity>
-                </View>
-                </View>
-             );
-          })}
-          
-          {myGoals.length === 0 && !loading && (
-             <View style={styles.emptyStateContainer}>
-                 <Text style={styles.emptyListText}>Danh sách trống.</Text>
-             </View>
+                return (
+                  <HealthGoalCard 
+                    key={item.id} 
+                    id={goalId}
+                    name={item.name}
+                    description={item.description}
+                    targets={item.targets}
+                    isCustom={isCustomGoal}
+                    onEdit={() => console.log('Edit', goalId)}
+                    onDelete={() => handleDeleteCustomGoal(goalId)}
+                    onSelect={() => handleSelectGoal(item)}
+                  />
+                );
+              })}
+            </View>
           )}
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
-  centerContent: {
-      justifyContent: 'center',
-      alignItems: 'center',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    backgroundColor: '#fff',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111827',
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  profileAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#84cc16',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 50,
-  },
-  sectionHeaderRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 12,
-      marginTop: 8,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#374151',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  dangerLink: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: '#ef4444',
-  },
-
-  // --- Active Card ---
-  activeCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    marginBottom: 24,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#bef264', // lime-300
-    shadowColor: '#84cc16',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-    position: 'relative',
-  },
-  activeCardBgDecor: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      height: 6,
-      backgroundColor: '#84cc16',
-  },
-  activeCardContent: {
-      padding: 16,
-  },
-  activeHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  badgeContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#65a30d',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 4,
-  },
-  badgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  expiryText: {
-    fontSize: 12,
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  activeGoalName: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#111827',
-    marginBottom: 6,
-  },
-  activeGoalDesc: {
-    fontSize: 13,
-    color: '#4b5563',
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  targetsPreview: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 6,
-      marginBottom: 16,
-  },
-  targetTag: {
-      fontSize: 11,
-      color: '#4d7c0f',
-      backgroundColor: '#ecfccb',
-      paddingHorizontal: 8,
-      paddingVertical: 2,
-      borderRadius: 4,
-      overflow: 'hidden',
-  },
-  detailButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f3f4f6',
-  },
-  detailButtonText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4d7c0f',
-    marginRight: 4,
-  },
-  emptyActiveCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderStyle: 'dashed',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    marginBottom: 24,
-  },
-  emptyText: {
-    marginTop: 12,
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#374151',
-  },
-  emptySubText: {
-    marginTop: 4,
-    fontSize: 13,
-    color: '#9ca3af',
-  },
-
-  // --- Create Button ---
-  createButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1f2937', // Dark gray
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  createIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  createBtnTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-  },
-  createBtnSub: {
-    fontSize: 12,
-    color: '#d1d5db',
-  },
-
-  // --- List Goals ---
-  listContainer: {
-    gap: 12,
-  },
-  goalCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    overflow: 'hidden',
-  },
-  goalCardActiveBorder: {
-      borderColor: '#84cc16',
-      backgroundColor: '#f7fee7', // light lime bg
-  },
-  goalCardBody: {
-    padding: 16,
-    flexDirection: 'row',
-    gap: 12,
-  },
-  goalIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  goalName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#111827',
-  },
-  goalDesc: {
-    fontSize: 13,
-    color: '#6b7280',
-    marginVertical: 4,
-    lineHeight: 18,
-  },
-  metaRow: {
-      marginTop: 4,
-  },
-  metaText: {
-    fontSize: 11,
-    color: '#9ca3af',
-  },
-  cardFooter: {
-      flexDirection: 'row',
-      borderTopWidth: 1,
-      borderTopColor: '#f3f4f6',
-      backgroundColor: '#fafafa',
-  },
-  actionButton: {
-      flex: 1,
-      paddingVertical: 10,
-      alignItems: 'center',
-      justifyContent: 'center',
-  },
-  divider: {
-      width: 1,
-      backgroundColor: '#e5e7eb',
-      marginVertical: 8,
-  },
-  actionText: {
-      fontSize: 13,
-      fontWeight: '600',
-      color: '#4b5563',
-  },
-  emptyStateContainer: {
-      padding: 20,
-      alignItems: 'center',
-  },
-  emptyListText: {
-      color: '#9ca3af',
-      fontStyle: 'italic',
-  }
-});
+export default ViewGoalScreen;

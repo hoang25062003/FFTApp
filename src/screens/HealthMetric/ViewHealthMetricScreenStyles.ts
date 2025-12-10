@@ -12,6 +12,8 @@ export const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  
+  // Header Section
   headerSection: {
     marginBottom: 20,
     backgroundColor: '#F8F9FA',
@@ -87,6 +89,8 @@ export const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 13,
   },
+  
+  // Date Card
   dateCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
@@ -155,6 +159,8 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  
+  // BMI Highlight Card
   bmiHighlightCard: {
     marginHorizontal: 16,
     marginTop: 20,
@@ -233,6 +239,8 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
+  
+  // Metrics Container
   metricsContainer: {
     paddingHorizontal: 16,
     marginTop: 24,
@@ -295,6 +303,8 @@ export const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginLeft: 4,
   },
+  
+  // Energy Container
   energyContainer: {
     paddingHorizontal: 16,
     marginTop: 24,
@@ -394,7 +404,6 @@ export const styles = StyleSheet.create({
   tdeeValueContainer: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginBottom: 12,
   },
   tdeeValue: {
     fontSize: 32,
@@ -407,17 +416,8 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 6,
   },
-  tdeeProgressBar: {
-    height: 8,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  tdeeProgress: {
-    height: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 4,
-  },
+  
+  // Note Card
   noteCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
@@ -450,6 +450,8 @@ export const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '500',
   },
+  
+  // History Header
   historyHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -488,18 +490,11 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
+  
+  // History Content
   historyContent: {
-    backgroundColor: '#FFFFFF',
     marginHorizontal: 16,
     marginTop: 8,
-    padding: 32,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-    alignItems: 'center',
   },
   emptyIconContainer: {
     width: 100,
@@ -509,6 +504,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 16,
+    alignSelf: 'center',
   },
   historyPlaceholder: {
     fontSize: 14,
@@ -516,6 +512,223 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '500',
   },
+  
+  // History Item (New Design)
+  historyItem: {
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    width: '100%',
+  },
+  
+  // Header: Date & Delete Button
+  historyItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  historyItemDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  historyItemCalendarIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  historyItemDate: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  historyItemTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  historyItemTime: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  historyDeleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FEF2F2',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  
+  // Metrics Grid (2 columns)
+  historyMetricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 10,
+  },
+  historyMetricBox: {
+    backgroundColor: '#F9FAFB',
+    width: '48%',
+    padding: 12,
+    borderRadius: 12,
+  },
+  historyFullWidthBox: {
+    width: '100%',
+  },
+  historyBMIBox: {
+    backgroundColor: '#F0F9FF',
+    width: '48%',
+  },
+  historyBMRBox: {
+    backgroundColor: '#FFFBEB',
+    width: '48%',
+  },
+  historyMetricLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  historyMetricValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  historyMetricValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
+  historyMetricUnit: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    marginLeft: 4,
+  },
+  
+  // BMI Content in Grid
+  historyBMIContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyBMILeft: {
+    flex: 1,
+  },
+  historyBMIBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  historyBMIBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  
+  // BMR Content in Grid (same structure as BMI)
+  historyBMRContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  historyBMRLeft: {
+    flex: 1,
+  },
+  historyBMRBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: '#F59E0B',
+  },
+  historyBMRBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  
+  // TDEE Highlight Box
+  historyTDEEBox: {
+    backgroundColor: BRAND_COLOR,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+  },
+  historyTDEEContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  historyTDEEIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  historyTDEETextBox: {
+    flex: 1,
+  },
+  historyTDEELabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  historyTDEEValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  historyTDEEValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#FFFFFF',
+  },
+  
+  // Notes Box
+  historyNoteBox: {
+    backgroundColor: '#FFFBEB',
+    padding: 12,
+    borderRadius: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#F59E0B',
+  },
+  historyNoteHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  historyNoteLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 0.5,
+  },
+  historyNoteText: {
+    fontSize: 12,
+    color: '#374151',
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  
+  // Loading & Empty States
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -568,36 +781,5 @@ export const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-  },
-  historyItem: {
-    backgroundColor: '#F9FAFB',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  historyItemHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  historyItemDate: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1F2937',
-  },
-  historyItemTime: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontWeight: '500',
-  },
-  historyItemStats: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  historyItemStat: {
-    fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '600',
   },
 });

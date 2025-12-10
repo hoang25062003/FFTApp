@@ -35,6 +35,15 @@ const HeaderApp: React.FC<HeaderProps> = ({
             navigation.navigate('DietRestrictionFlow' as never);
         }
     };
+    const handleNotificationPress = () => {
+        if (onNotificationPress) {
+            // Nếu có prop truyền vào thì dùng prop (để linh hoạt)
+            onNotificationPress();
+        } else {
+            // Mặc định: Navigate đến ViewDietRestrictionScreen
+            navigation.navigate('NotificationScreen' as never);
+        }
+    };
 
     return (
         <View style={styles.headerContainer}>
@@ -88,7 +97,7 @@ const HeaderApp: React.FC<HeaderProps> = ({
 
                         {/* NÚT NOTIFICATION */}
                         <TouchableOpacity 
-                            onPress={onNotificationPress} 
+                            onPress={handleNotificationPress} 
                             style={styles.iconButton}
                             activeOpacity={0.6}
                         >

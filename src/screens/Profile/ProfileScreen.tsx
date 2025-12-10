@@ -8,37 +8,33 @@ import {
     TextInput,
     ActivityIndicator,
     Alert,
-    Dimensions,
     ImageBackground,
     RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation, useIsFocused, CommonActions } from '@react-navigation/native';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useNavigation, useIsFocused, CommonActions, useRoute, RouteProp } from '@react-navigation/native';
 import { API_BASE_URL } from '@env';
-
-// ✅ Xóa AsyncStorage import vì Service đã lo rồi
-// import AsyncStorage from '@react-native-async-storage/async-storage'; 
 
 import HeaderApp from '../../components/HeaderApp';
 import RecipeCard from '../../components/RecipeCard';
 import Pagination from '../../components/Pagination';
+// 👇 IMPORT MỚI: Đảm bảo đường dẫn đúng tới file ReportDialog bạn vừa tạo
+import ReportDialog from '../../components/ReportDialog'; 
 
 import UserService, { UserProfile, getGenderDisplay } from '../../services/UserService';
-import RecipeService, { Recipe } from '../../services/RecipeService';
-import AuthService from '../../services/AuthService'; // ✅ Import AuthService
-import { ProfileStackParamList } from '../../navigation/ProfileStackNavigator';
+import profileService, { PublicProfileDto } from '../../services/ProfileService';
+import RecipeService, { MyRecipe as Recipe } from '../../services/RecipeService';
+import AuthService from '../../services/AuthService';
 
-import { localStyles, BRAND_COLOR_EXPORT } from './ProfileScreenStyles'; 
+import { localStyles, BRAND_COLOR_EXPORT } from './ProfileScreenStyles';
 
-type ProfileNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
+const BRAND_COLOR = BRAND_COLOR_EXPORT;
 
-const { width } = Dimensions.get('window');
-const BRAND_COLOR = BRAND_COLOR_EXPORT; 
+type ProfileScreenRouteProp = RouteProp<{ ProfileScreen: { username?: string } }, 'ProfileScreen'>;
 
-const initialUserData: UserProfile = {
+const initialUserData: UserProfile | PublicProfileDto = {
     id: '',
     firstName: '',
     lastName: '',
@@ -96,42 +92,75 @@ const getFullImageUrl = (url: string | null) => {
 };
 
 const ProfileScreen: React.FC = () => {
-    const navigation = useNavigation<ProfileNavigationProp>();
+    const navigation = useNavigation<any>();
+    const route = useRoute<ProfileScreenRouteProp>();
     const isFocused = useIsFocused();
-    
-    // States
-    const [userData, setUserData] = useState<UserProfile>(initialUserData);
-    const [isLoading, setIsLoading] = useState(true);
+
+    const username = route.params?.username;
+    const isOwnProfile = !username;
+
+    const [userData, setUserData] = useState<UserProfile | PublicProfileDto>(initialUserData);
+    const [isLoading, setIsLoading] = useState(true); // Loading toàn trang
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isFollowing, setIsFollowing] = useState(false);
+    const [followLoading, setFollowLoading] = useState(false);
 
-    // Recipe States
+    // 👇 STATE MỚI: Quản lý ẩn hiện dialog báo cáo
+    const [isReportVisible, setReportVisible] = useState(false);
+
     const [recipes, setRecipes] = useState<Recipe[]>([]);
-    const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
+    const [isLoadingRecipes, setIsLoadingRecipes] = useState(false); // Loading riêng cho list recipes
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [totalRecipes, setTotalRecipes] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
 
+    const [activeTab, setActiveTab] = useState<'my_recipes' | 'saved_recipes'>('my_recipes');
+
     const fetchUserProfile = useCallback(async () => {
         try {
-            const profile = await UserService.getUserProfile();
-            setUserData(profile);
+            if (isOwnProfile) {
+                const profile = await UserService.getUserProfile();
+                setUserData(profile);
+                setIsFollowing(false);
+            } else {
+                const profile = await profileService.getUserProfileByUsername(username!);
+                setUserData(profile);
+                setIsFollowing(profile.isFollowing);
+            }
             setError(null);
         } catch (err) {
             console.error('API Error:', err);
             setError('Không thể tải hồ sơ');
         }
-    }, []);
+    }, [isOwnProfile, username]);
 
     const fetchRecipes = useCallback(async () => {
-        setIsLoadingRecipes(true);
+        setIsLoadingRecipes(true); // Chỉ bật loading ở danh sách
         try {
-            const response = await RecipeService.getMyRecipes({
-                page: currentPage,
-                pageSize: pageSize,
-                title: searchQuery || undefined,
-            });
+            let response;
+            if (isOwnProfile) {
+                if (activeTab === 'my_recipes') {
+                    response = await RecipeService.getMyRecipes({
+                        page: currentPage,
+                        pageSize: pageSize,
+                        title: searchQuery || undefined,
+                    });
+                } else {
+                    response = await RecipeService.getSavedRecipes({
+                        pageNumber: currentPage,
+                        pageSize: pageSize,
+                        keyword: searchQuery || undefined,
+                    });
+                }
+            } else {
+                response = await RecipeService.getRecipes({
+                    page: currentPage,
+                    pageSize: pageSize,
+                });
+            }
+
             if (response && response.items) {
                 setRecipes(response.items);
                 setTotalRecipes(response.totalCount || 0);
@@ -141,34 +170,90 @@ const ProfileScreen: React.FC = () => {
             }
         } catch (err) {
             console.error(err);
+            setRecipes([]);
         } finally {
             setIsLoadingRecipes(false);
         }
-    }, [currentPage, pageSize, searchQuery]);
+    }, [currentPage, pageSize, searchQuery, activeTab, isOwnProfile]);
 
+    const handleFollowToggle = async () => {
+        if (isOwnProfile || !userData.id) return;
+        setFollowLoading(true);
+        try {
+            if (isFollowing) {
+                await profileService.unfollowUser(userData.id);
+                setIsFollowing(false);
+                setUserData(prev => ({
+                    ...prev,
+                    followersCount: Math.max(0, prev.followersCount - 1)
+                }));
+            } else {
+                await profileService.followUser(userData.id);
+                setIsFollowing(true);
+                setUserData(prev => ({
+                    ...prev,
+                    followersCount: prev.followersCount + 1
+                }));
+            }
+        } catch (error) {
+            Alert.alert('Lỗi', 'Không thể thực hiện thao tác này');
+        } finally {
+            setFollowLoading(false);
+        }
+    };
+
+    // 👇 HÀM MỚI: Xử lý khi bấm nút Gửi báo cáo
+    const handleSubmitReport = async (reason: string) => {
+        try {
+            console.log('Sending report for user:', userData.id, 'Reason:', reason);
+            
+            // TODO: Gọi API báo cáo thực tế ở đây
+            // await profileService.reportUser(userData.id, reason);
+
+            setReportVisible(false); // Đóng dialog trước
+            
+            // Hiện thông báo thành công sau
+            setTimeout(() => {
+                 Alert.alert('Đã gửi', 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét sớm.');
+            }, 300);
+           
+        } catch (error) {
+            console.error(error);
+            Alert.alert('Lỗi', 'Có lỗi xảy ra khi gửi báo cáo.');
+        }
+    };
+
+    // --- SỬA ĐỔI PHẦN USE EFFECT ---
+
+    // 1. Chỉ chạy khi mount hoặc đổi user: Load Profile (quản lý isLoading toàn trang)
     useEffect(() => {
-        const loadData = async () => {
+        const loadProfile = async () => {
             setIsLoading(true);
-            await Promise.all([fetchUserProfile(), fetchRecipes()]);
+            await fetchUserProfile();
             setIsLoading(false);
         };
-        loadData();
-    }, []); 
+        loadProfile();
+    }, [fetchUserProfile]);
 
+    // 2. Chạy khi bộ lọc/trang thay đổi: Load Recipes (quản lý isLoadingRecipes)
+    // fetchRecipes đã có sẵn việc set isLoadingRecipes bên trong nó
     useEffect(() => {
-        if (isFocused && !isLoading) {
-            fetchUserProfile();
-        }
-    }, [isFocused]);
+        fetchRecipes();
+    }, [fetchRecipes]);
 
+    // 3. Khi quay lại màn hình (Focus)
     useEffect(() => {
-        if (!isLoading) {
-            fetchRecipes();
+        if (isFocused) {
+            // Cập nhật lại thông tin user ngầm (không hiện loading)
+            fetchUserProfile(); 
         }
-    }, [currentPage, pageSize, searchQuery]);
+    }, [isFocused, fetchUserProfile]);
+
+    // --------------------------------
 
     const onRefresh = async () => {
         setRefreshing(true);
+        // Khi kéo để refresh thì load lại cả 2
         await Promise.all([fetchUserProfile(), fetchRecipes()]);
         setRefreshing(false);
     };
@@ -178,26 +263,29 @@ const ProfileScreen: React.FC = () => {
     const handlePageSizeChange = (size: number) => { setPageSize(size); setCurrentPage(1); };
     const handleSearch = (text: string) => { setSearchQuery(text); setCurrentPage(1); };
     const handleEditProfile = () => navigation.navigate('EditProfile');
-    const handleViewRecipe = (recipeId: string) => navigation.navigate('ViewRecipe', { recipeId });
+    const handleViewRecipe = (recipeId: string) => {
+        navigation.navigate('ViewRecipeScreen', { recipeId });
+    };
 
-    // ✅ CẬP NHẬT LOGIC ĐĂNG XUẤT SỬ DỤNG SERVICE
+    const handleTabChange = (tab: 'my_recipes' | 'saved_recipes') => {
+        if (activeTab !== tab) {
+            setActiveTab(tab);
+            setCurrentPage(1);
+            setSearchQuery('');
+        }
+    };
+
     const performLogout = async () => {
         try {
-            // 1. Gọi hàm logout từ AuthService
-            // Hàm này đã bao gồm: Gọi API logout (nếu có) + Xóa AsyncStorage (TokenManager.clearAll)
-            await AuthService.logout(); 
-            
-            // 2. Reset navigation stack và chuyển về Login
+            await AuthService.logout();
             navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
-                    routes: [{ name: 'AuthFlow' }], // Đảm bảo 'Auth' là tên đúng trong AppNavigator của bạn
+                    routes: [{ name: 'AuthFlow' }],
                 })
             );
         } catch (error) {
-            console.error("Logout Error:", error);
-            // Dù lỗi API hay gì thì vẫn nên xóa token local và đẩy về login
-            await AuthService.TokenManager.clearAll(); 
+            await AuthService.TokenManager.clearAll();
             navigation.dispatch(
                 CommonActions.reset({
                     index: 0,
@@ -208,18 +296,10 @@ const ProfileScreen: React.FC = () => {
     };
 
     const handleLogout = () => {
-        Alert.alert(
-            "Đăng xuất",
-            "Bạn có chắc chắn muốn đăng xuất?",
-            [
-                { text: "Hủy", style: "cancel" },
-                { 
-                    text: "Đăng xuất", 
-                    style: "destructive", 
-                    onPress: performLogout 
-                }
-            ]
-        );
+        Alert.alert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", [
+            { text: "Hủy", style: "cancel" },
+            { text: "Đăng xuất", style: "destructive", onPress: performLogout }
+        ]);
     };
 
     if (isLoading) {
@@ -237,6 +317,12 @@ const ProfileScreen: React.FC = () => {
                 <TouchableOpacity onPress={fetchUserProfile} style={localStyles.retryButton}>
                     <Text style={{ color: '#fff' }}>Thử lại</Text>
                 </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={handleLogout}
+                    style={[localStyles.retryButton, { backgroundColor: '#FF5252', marginTop: 10 }]}
+                >
+                    <Text style={{ color: '#fff' }}>Đăng xuất</Text>
+                </TouchableOpacity>
             </SafeAreaView>
         );
     }
@@ -251,103 +337,144 @@ const ProfileScreen: React.FC = () => {
     return (
         <View style={localStyles.container}>
             <HeaderApp isHome={false} onBackPress={handleBackPress} />
-
-            <ScrollView 
-                showsVerticalScrollIndicator={false} 
+            <ScrollView
+                showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 40 }}
                 refreshControl={
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND_COLOR]} />
                 }
             >
-                
+                {/* Header & Avatar Section */}
                 <View style={localStyles.headerSection}>
-                    <ImageBackground 
+                    <ImageBackground
                         source={require('../../assets/images/background.jpg')}
                         style={localStyles.gradientBg}
                         resizeMode="cover"
                     >
                         <View style={localStyles.patternOverlay} />
                     </ImageBackground>
-                    
+
                     <View style={localStyles.profileHeader}>
                         <View style={localStyles.avatarSection}>
                             <View style={localStyles.avatarWrapper}>
                                 {finalAvatarUrl ? (
-                                    <Image 
-                                        source={{ uri: finalAvatarUrl }} 
-                                        style={localStyles.avatarImage} 
-                                    />
+                                    <Image source={{ uri: finalAvatarUrl }} style={localStyles.avatarImage} />
                                 ) : (
                                     <View style={localStyles.avatarPlaceholder}>
                                         <MaterialIcon name="account" size={50} color="#FFFFFF" />
                                     </View>
                                 )}
-                                <TouchableOpacity style={localStyles.editAvatarBadge} onPress={handleEditProfile}>
-                                    <MaterialIcon name="camera" size={16} color="#fff" />
-                                </TouchableOpacity>
+                                {isOwnProfile && (
+                                    <TouchableOpacity style={localStyles.editAvatarBadge} onPress={handleEditProfile}>
+                                        <MaterialIcon name="camera" size={16} color="#fff" />
+                                    </TouchableOpacity>
+                                )}
                             </View>
                         </View>
-
                         <View style={localStyles.profileInfo}>
                             <Text style={localStyles.profileName}>{fullName}</Text>
                             <Text style={localStyles.profileBio}>{bioDisplay}</Text>
                         </View>
                     </View>
 
+                    {/* Stats Card */}
                     <View style={localStyles.statsCard}>
-                        <View style={localStyles.statItem}>
+                        {/* Tab: Followers */}
+                        <TouchableOpacity
+                            style={localStyles.statItem}
+                            onPress={() => navigation.navigate('ListFollowScreen', { initialTab: 'Followers' })}
+                        >
                             <View style={localStyles.statIconBg}>
                                 <MaterialIcon name="account-multiple" size={20} color={BRAND_COLOR} />
                             </View>
                             <Text style={localStyles.statValue}>{userData.followersCount}</Text>
-                            <Text style={localStyles.statLabel}>Followers</Text>
-                        </View>
-                        
+                            <Text style={localStyles.statLabel}>Người theo dõi</Text>
+                        </TouchableOpacity>
+
                         <View style={localStyles.statDivider} />
-                        
-                        <View style={localStyles.statItem}>
+
+                        {/* Tab: Following */}
+                        <TouchableOpacity
+                            style={localStyles.statItem}
+                            onPress={() => navigation.navigate('ListFollowScreen', { initialTab: 'Following' })}
+                        >
                             <View style={localStyles.statIconBg}>
                                 <MaterialIcon name="account-heart" size={20} color={BRAND_COLOR} />
                             </View>
                             <Text style={localStyles.statValue}>{userData.followingCount}</Text>
-                            <Text style={localStyles.statLabel}>Following</Text>
-                        </View>
-                        
+                            <Text style={localStyles.statLabel}>Đang theo dõi</Text>
+                        </TouchableOpacity>
+
                         <View style={localStyles.statDivider} />
-                        
+
+                        {/* Star Rating */}
                         <View style={localStyles.statItem}>
                             <View style={localStyles.statIconBg}>
                                 <MaterialIcon name="star" size={20} color="#FFB800" />
                             </View>
                             <Text style={localStyles.statValue}>4.5</Text>
-                            <Text style={localStyles.statLabel}>Rating</Text>
+                            <Text style={localStyles.statLabel}>Đánh giá</Text>
                         </View>
                     </View>
 
+                    {/* Action Buttons */}
                     <View style={localStyles.actionButtonsContainer}>
-                        <TouchableOpacity style={localStyles.editButton} onPress={handleEditProfile}>
-                            <MaterialIcon name="pencil" size={20} color="#FFFFFF" />
-                            <Text style={localStyles.editButtonText}>Chỉnh sửa</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity style={localStyles.shareButton}>
-                            <MaterialIcon name="share-variant" size={20} color={BRAND_COLOR} />
-                            <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
-                        </TouchableOpacity>
-                        
-                        <TouchableOpacity style={localStyles.logoutButton} onPress={handleLogout}>
-                            <MaterialIcon name="logout" size={20} color="#FF5252" />
-                        </TouchableOpacity>
+                        {isOwnProfile ? (
+                            <>
+                                <TouchableOpacity style={localStyles.editButton} onPress={handleEditProfile}>
+                                    <MaterialIcon name="pencil" size={20} color="#FFFFFF" />
+                                    <Text style={localStyles.editButtonText}>Chỉnh sửa</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={localStyles.shareButton}>
+                                    <MaterialIcon name="share-variant" size={20} color={BRAND_COLOR} />
+                                    <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity style={localStyles.logoutButton} onPress={handleLogout}>
+                                    <MaterialIcon name="logout" size={20} color="#FF5252" />
+                                </TouchableOpacity>
+                            </>
+                        ) : (
+                            <>
+                                <TouchableOpacity
+                                    style={[localStyles.editButton, isFollowing && { backgroundColor: '#E5E7EB' }]}
+                                    onPress={handleFollowToggle}
+                                    disabled={followLoading}
+                                >
+                                    {followLoading ? (
+                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                    ) : (
+                                        <>
+                                            <MaterialIcon
+                                                name={isFollowing ? "account-check" : "account-plus"}
+                                                size={20}
+                                                color={isFollowing ? BRAND_COLOR : "#FFFFFF"}
+                                            />
+                                            <Text style={[localStyles.editButtonText, isFollowing && { color: BRAND_COLOR }]}>
+                                                {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+                                            </Text>
+                                        </>
+                                    )}
+                                </TouchableOpacity>
+                                <TouchableOpacity style={localStyles.shareButton}>
+                                    <MaterialIcon name="share-variant" size={20} color={BRAND_COLOR} />
+                                    <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
+                                </TouchableOpacity>
+                                {/* 👇 NÚT BÁO CÁO: ĐÃ CẬP NHẬT EVENT ONPRESS */}
+                                <TouchableOpacity style={localStyles.reportButton} onPress={() => setReportVisible(true)}>
+                                    <MaterialIcon name="flag" size={20} color="#F59E0B" />
+                                </TouchableOpacity>
+                            </>
+                        )}
                     </View>
                 </View>
 
+                {/* Content Section */}
                 <View style={localStyles.contentSection}>
                     <View style={localStyles.infoCard}>
                         <View style={localStyles.cardHeader}>
                             <MaterialIcon name="information" size={24} color={BRAND_COLOR} />
                             <Text style={localStyles.cardTitle}>Thông tin cá nhân</Text>
                         </View>
-                        
                         <InfoRow iconName="calendar" label="Ngày sinh" value={birthDateDisplay} />
                         <InfoRow iconName="gender-male-female" label="Giới tính" value={getGenderDisplay(userData.gender)} />
                         <InfoRow iconName="email" label="Email" value={userData.email} isLink />
@@ -358,17 +485,38 @@ const ProfileScreen: React.FC = () => {
                         <View style={localStyles.recipeSectionHeader}>
                             <View style={localStyles.recipeTitleContainer}>
                                 <MaterialIcon name="book-open-variant" size={24} color={BRAND_COLOR} />
-                                <Text style={localStyles.recipeSectionTitle}>Công thức của tôi</Text>
+                                <Text style={localStyles.recipeSectionTitle}>
+                                    {isOwnProfile ? 'Danh sách công thức' : 'Công thức của ' + userData.firstName}
+                                </Text>
                                 <View style={localStyles.recipeBadge}>
                                     <Text style={localStyles.recipeBadgeText}>{totalRecipes}</Text>
                                 </View>
                             </View>
                         </View>
-                        
+
+                        {isOwnProfile && (
+                            <View style={localStyles.tabContainer}>
+                                <TouchableOpacity
+                                    style={[localStyles.tabButton, activeTab === 'my_recipes' && localStyles.activeTabButton]}
+                                    onPress={() => handleTabChange('my_recipes')}
+                                >
+                                    <MaterialIcon name="chef-hat" size={20} color={activeTab === 'my_recipes' ? '#FFF' : '#6B7280'} style={{ marginRight: 6 }} />
+                                    <Text style={[localStyles.tabText, activeTab === 'my_recipes' ? localStyles.activeTabText : localStyles.inactiveTabText]}>Của tôi</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[localStyles.tabButton, activeTab === 'saved_recipes' && localStyles.activeTabButton]}
+                                    onPress={() => handleTabChange('saved_recipes')}
+                                >
+                                    <MaterialIcon name="bookmark" size={20} color={activeTab === 'saved_recipes' ? '#FFF' : '#6B7280'} style={{ marginRight: 6 }} />
+                                    <Text style={[localStyles.tabText, activeTab === 'saved_recipes' ? localStyles.activeTabText : localStyles.inactiveTabText]}>Đã lưu</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
                         <View style={localStyles.searchBarContainer}>
                             <Ionicons name="search" size={20} color="#9CA3AF" />
                             <TextInput
-                                placeholder="Tìm kiếm công thức..."
+                                placeholder={isOwnProfile ? (activeTab === 'my_recipes' ? "Tìm của tôi..." : "Tìm đã lưu...") : "Tìm kiếm..."}
                                 style={localStyles.searchInput}
                                 placeholderTextColor="#9CA3AF"
                                 value={searchQuery}
@@ -381,19 +529,13 @@ const ProfileScreen: React.FC = () => {
                             )}
                         </View>
 
+                        {/* Đây là nơi hiển thị Loading chỉ cho phần danh sách */}
                         {isLoadingRecipes ? (
                             <ActivityIndicator size="small" color={BRAND_COLOR} style={{ marginVertical: 30 }} />
                         ) : recipes.length === 0 ? (
                             <View style={localStyles.emptyState}>
-                                <View style={localStyles.emptyIconContainer}>
-                                    <MaterialIcon name="chef-hat" size={60} color="#E5E7EB" />
-                                </View>
-                                <Text style={localStyles.emptyStateTitle}>
-                                    {searchQuery ? 'Không tìm thấy kết quả' : 'Chưa có công thức nào'}
-                                </Text>
-                                <Text style={localStyles.emptyStateText}>
-                                    {searchQuery ? 'Thử tìm kiếm với từ khóa khác' : 'Hãy bắt đầu chia sẻ công thức của bạn'}
-                                </Text>
+                                <MaterialIcon name="chef-hat" size={60} color="#E5E7EB" />
+                                <Text style={localStyles.emptyStateTitle}>Không tìm thấy công thức</Text>
                             </View>
                         ) : (
                             <>
@@ -401,12 +543,12 @@ const ProfileScreen: React.FC = () => {
                                     {recipes.map((recipe) => (
                                         <RecipeCard
                                             key={recipe.id}
-                                            imageUri={recipe.imageUrl || 'https://via.placeholder.com/150'} 
-                                            title={recipe.name || 'Không có tiêu đề'}
+                                            imageUri={recipe.imageUrl || 'https://via.placeholder.com/150'}
+                                            title={recipe.name || 'Không tiêu đề'}
                                             cookTime={recipe.cookTime || 0}
                                             ration={recipe.ration || 0}
-                                            difficulty={recipe.difficulty?.value || 'EASY'}
-                                            isPrivate={recipe.status === 'PRIVATE'}
+                                            difficulty={'EASY'}
+                                            isPrivate={false}
                                             onPress={() => handleViewRecipe(recipe.id)}
                                         />
                                     ))}
@@ -427,8 +569,15 @@ const ProfileScreen: React.FC = () => {
                         )}
                     </View>
                 </View>
-
             </ScrollView>
+
+            {/* 👇 REPORT DIALOG COMPONENT: Đặt ở đây để phủ lên toàn bộ màn hình khi hiện */}
+            <ReportDialog
+                visible={isReportVisible}
+                reportedUser={fullName}
+                onClose={() => setReportVisible(false)}
+                onSubmit={handleSubmitReport}
+            />
         </View>
     );
 };

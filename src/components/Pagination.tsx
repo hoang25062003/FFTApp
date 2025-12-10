@@ -4,14 +4,14 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 
 interface PaginationProps {
-    currentPage: number; // Trang hiện tại (bắt đầu từ 1)
-    totalPages: number; // Tổng số trang
-    pageSize: number; // Số items mỗi trang
-    totalItems: number; // Tổng số items
-    onPageChange: (page: number) => void; // Callback khi đổi trang
-    onPageSizeChange?: (pageSize: number) => void; // Callback khi đổi page size (optional)
-    pageSizeOptions?: number[]; // Các tùy chọn page size (mặc định: [10, 20, 50])
-    showPageSizeSelector?: boolean; // Hiển thị selector page size không (mặc định: true)
+    currentPage: number;
+    totalPages: number;
+    pageSize: number;
+    totalItems: number;
+    onPageChange: (page: number) => void;
+    onPageSizeChange?: (pageSize: number) => void;
+    pageSizeOptions?: number[];
+    showPageSizeSelector?: boolean;
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -24,36 +24,25 @@ const Pagination: React.FC<PaginationProps> = ({
     pageSizeOptions = [10, 20, 50],
     showPageSizeSelector = true,
 }) => {
-    // Tính toán range hiển thị
     const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
     const endItem = Math.min(currentPage * pageSize, totalItems);
 
-    // Xử lý chuyển trang
     const handlePrevious = () => {
-        if (currentPage > 1) {
-            onPageChange(currentPage - 1);
-        }
+        if (currentPage > 1) onPageChange(currentPage - 1);
     };
 
     const handleNext = () => {
-        if (currentPage < totalPages) {
-            onPageChange(currentPage + 1);
-        }
+        if (currentPage < totalPages) onPageChange(currentPage + 1);
     };
 
     const handleFirst = () => {
-        if (currentPage !== 1) {
-            onPageChange(1);
-        }
+        if (currentPage !== 1) onPageChange(1);
     };
 
     const handleLast = () => {
-        if (currentPage !== totalPages) {
-            onPageChange(totalPages);
-        }
+        if (currentPage !== totalPages) onPageChange(totalPages);
     };
 
-    // Render các nút số trang (hiển thị tối đa 5 nút)
     const renderPageNumbers = () => {
         const pages: number[] = [];
         const maxVisible = 5;
@@ -78,6 +67,7 @@ const Pagination: React.FC<PaginationProps> = ({
                 ]}
                 onPress={() => onPageChange(page)}
                 disabled={currentPage === page}
+                activeOpacity={0.7}
             >
                 <Text
                     style={[
@@ -96,36 +86,35 @@ const Pagination: React.FC<PaginationProps> = ({
             {/* Page Size Selector */}
             {showPageSizeSelector && onPageSizeChange && (
                 <View style={styles.pageSizeContainer}>
-                    <Text style={styles.pageSizeLabel}>Hiển thị:</Text>
-                    {pageSizeOptions.map((size) => (
-                        <TouchableOpacity
-                            key={size}
-                            style={[
-                                styles.pageSizeButton,
-                                pageSize === size && styles.pageSizeButtonActive,
-                            ]}
-                            onPress={() => onPageSizeChange(size)}
-                        >
-                            <Text
+                    <Text style={styles.pageSizeLabel}>Hiển thị</Text>
+                    <View style={styles.pageSizeButtonsWrapper}>
+                        {pageSizeOptions.map((size) => (
+                            <TouchableOpacity
+                                key={size}
                                 style={[
-                                    styles.pageSizeButtonText,
-                                    pageSize === size && styles.pageSizeButtonTextActive,
+                                    styles.pageSizeButton,
+                                    pageSize === size && styles.pageSizeButtonActive,
                                 ]}
+                                onPress={() => onPageSizeChange(size)}
+                                activeOpacity={0.7}
                             >
-                                {size}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                    <Text style={styles.pageSizeLabel}>/ trang</Text>
+                                <Text
+                                    style={[
+                                        styles.pageSizeButtonText,
+                                        pageSize === size && styles.pageSizeButtonTextActive,
+                                    ]}
+                                >
+                                    {size}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                    <Text style={styles.pageSizeLabel}>mỗi trang</Text>
                 </View>
             )}
 
             {/* Pagination Info */}
-            <View style={styles.infoContainer}>
-                <Text style={styles.infoText}>
-                    Hiển thị {startItem}-{endItem} trong tổng số {totalItems}
-                </Text>
-            </View>
+
 
             {/* Pagination Controls */}
             <View style={styles.controlsContainer}>
@@ -134,11 +123,12 @@ const Pagination: React.FC<PaginationProps> = ({
                     style={[styles.navButton, currentPage === 1 && styles.navButtonDisabled]}
                     onPress={handleFirst}
                     disabled={currentPage === 1}
+                    activeOpacity={0.7}
                 >
                     <Icon
                         name="page-first"
-                        size={20}
-                        color={currentPage === 1 ? '#ccc' : '#8BC34A'}
+                        size={18}
+                        color={currentPage === 1 ? '#D1D5DB' : '#8BC34A'}
                     />
                 </TouchableOpacity>
 
@@ -147,11 +137,12 @@ const Pagination: React.FC<PaginationProps> = ({
                     style={[styles.navButton, currentPage === 1 && styles.navButtonDisabled]}
                     onPress={handlePrevious}
                     disabled={currentPage === 1}
+                    activeOpacity={0.7}
                 >
                     <Icon
                         name="chevron-left"
-                        size={24}
-                        color={currentPage === 1 ? '#ccc' : '#8BC34A'}
+                        size={22}
+                        color={currentPage === 1 ? '#D1D5DB' : '#8BC34A'}
                     />
                 </TouchableOpacity>
 
@@ -168,11 +159,12 @@ const Pagination: React.FC<PaginationProps> = ({
                     ]}
                     onPress={handleNext}
                     disabled={currentPage === totalPages}
+                    activeOpacity={0.7}
                 >
                     <Icon
                         name="chevron-right"
-                        size={24}
-                        color={currentPage === totalPages ? '#ccc' : '#8BC34A'}
+                        size={22}
+                        color={currentPage === totalPages ? '#D1D5DB' : '#8BC34A'}
                     />
                 </TouchableOpacity>
 
@@ -184,11 +176,12 @@ const Pagination: React.FC<PaginationProps> = ({
                     ]}
                     onPress={handleLast}
                     disabled={currentPage === totalPages}
+                    activeOpacity={0.7}
                 >
                     <Icon
                         name="page-last"
-                        size={20}
-                        color={currentPage === totalPages ? '#ccc' : '#8BC34A'}
+                        size={18}
+                        color={currentPage === totalPages ? '#D1D5DB' : '#8BC34A'}
                     />
                 </TouchableOpacity>
             </View>
@@ -198,11 +191,16 @@ const Pagination: React.FC<PaginationProps> = ({
 
 const styles = StyleSheet.create({
     container: {
-        paddingVertical: 15,
-        paddingHorizontal: 10,
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#e0e0e0',
+        paddingVertical: 16,
+        paddingHorizontal: 16,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        marginTop: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 3,
     },
     
     // Page Size Selector
@@ -210,44 +208,69 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        marginBottom: 10,
+        marginBottom: 16,
+        flexWrap: 'wrap',
     },
     pageSizeLabel: {
-        fontSize: 14,
-        color: '#555',
-        marginHorizontal: 5,
+        fontSize: 13,
+        color: '#6B7280',
+        fontWeight: '600',
+        marginHorizontal: 8,
+    },
+    pageSizeButtonsWrapper: {
+        flexDirection: 'row',
+        backgroundColor: '#F3F4F6',
+        borderRadius: 10,
+        padding: 3,
     },
     pageSizeButton: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        marginHorizontal: 3,
-        borderRadius: 5,
-        borderWidth: 1,
-        borderColor: '#ddd',
-        backgroundColor: '#fff',
+        paddingHorizontal: 14,
+        paddingVertical: 7,
+        marginHorizontal: 2,
+        borderRadius: 8,
+        minWidth: 40,
+        alignItems: 'center',
     },
     pageSizeButtonActive: {
         backgroundColor: '#8BC34A',
-        borderColor: '#8BC34A',
+        shadowColor: '#8BC34A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 2,
     },
     pageSizeButtonText: {
         fontSize: 13,
-        color: '#555',
-        fontWeight: '500',
+        color: '#6B7280',
+        fontWeight: '600',
     },
     pageSizeButtonTextActive: {
-        color: '#fff',
-        fontWeight: 'bold',
+        color: '#FFFFFF',
+        fontWeight: '700',
     },
     
     // Info
     infoContainer: {
         alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: 16,
+    },
+    infoBadge: {
+        backgroundColor: '#F9FAFB',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
     },
     infoText: {
         fontSize: 13,
-        color: '#666',
+        color: '#1F2937',
+        fontWeight: '700',
+    },
+    infoTextLight: {
+        fontSize: 13,
+        color: '#9CA3AF',
+        fontWeight: '500',
     },
     
     // Controls
@@ -255,45 +278,54 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 6,
     },
     navButton: {
-        padding: 8,
-        marginHorizontal: 2,
-        borderRadius: 5,
-        backgroundColor: '#f5f5f5',
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        backgroundColor: '#F0F9FF',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     navButtonDisabled: {
-        backgroundColor: '#f9f9f9',
+        backgroundColor: '#F9FAFB',
     },
     
     // Page Numbers
     pageNumbersContainer: {
         flexDirection: 'row',
-        marginHorizontal: 5,
+        marginHorizontal: 4,
+        gap: 4,
     },
     pageButton: {
         paddingHorizontal: 12,
         paddingVertical: 8,
-        marginHorizontal: 2,
-        borderRadius: 5,
+        borderRadius: 10,
         borderWidth: 1,
-        borderColor: '#ddd',
-        backgroundColor: '#fff',
-        minWidth: 35,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#FFFFFF',
+        minWidth: 38,
         alignItems: 'center',
+        justifyContent: 'center',
     },
     pageButtonActive: {
         backgroundColor: '#8BC34A',
         borderColor: '#8BC34A',
+        shadowColor: '#8BC34A',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 2,
     },
     pageButtonText: {
-        fontSize: 14,
-        color: '#555',
-        fontWeight: '500',
+        fontSize: 13,
+        color: '#6B7280',
+        fontWeight: '600',
     },
     pageButtonTextActive: {
-        color: '#fff',
-        fontWeight: 'bold',
+        color: '#FFFFFF',
+        fontWeight: '700',
     },
 });
 

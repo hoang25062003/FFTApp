@@ -6,7 +6,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 interface RecipeCardProps {
     imageUri: string;
     title: string;
-    // ⭐ THAY THẾ views
     cookTime: number; // Thời gian nấu (phút)
     ration: number; // Khẩu phần (số người)
     difficulty: 'EASY' | 'MEDIUM' | 'HARD'; // Độ khó
@@ -17,8 +16,6 @@ interface RecipeCardProps {
 /**
  * Hiển thị số sao dựa trên độ khó.
  * EASY = 1 vàng, 2 xám; MEDIUM = 2 vàng, 1 xám; HARD = 3 vàng.
- * @param difficulty Giá trị độ khó.
- * @returns Array<React.ReactElement>
  */
 const renderDifficultyStars = (difficulty: RecipeCardProps['difficulty']) => {
     let starCount = 0;
@@ -28,14 +25,12 @@ const renderDifficultyStars = (difficulty: RecipeCardProps['difficulty']) => {
     else if (upperCaseDifficulty === 'MEDIUM') starCount = 2;
     else if (upperCaseDifficulty === 'HARD') starCount = 3;
 
-    // Tạo 3 biểu tượng ngôi sao
     return [...Array(3)].map((_, i) => (
         <Icon 
             key={i}
             name="star"
-            size={14}
-            // Tô màu vàng nếu chỉ mục nhỏ hơn số sao cần hiển thị
-            color={i < starCount ? '#FFD700' : '#ccc'} 
+            size={12}
+            color={i < starCount ? '#FFB800' : '#E5E7EB'} 
             style={styles.starIcon}
         />
     ));
@@ -51,133 +46,164 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
     isPrivate = false 
 }) => {
     return (
-        <TouchableOpacity style={styles.cardContainer} onPress={onPress}>
-            <Image source={{ uri: imageUri }} style={styles.recipeImage} />
-            <View style={styles.infoOverlay}>
-                <Text style={styles.recipeTitle} numberOfLines={2} ellipsizeMode="tail">{title}</Text>
+        <TouchableOpacity style={styles.cardContainer} onPress={onPress} activeOpacity={0.7}>
+            {/* Image Container với Overlay */}
+            <View style={styles.imageContainer}>
+                <Image source={{ uri: imageUri }} style={styles.recipeImage} />
+                <View style={styles.imageOverlay} />
                 
-                {/* DÒNG 1: THỜI GIAN NẤU & KHẨU PHẦN */}
+                {/* Private Badge */}
+                {isPrivate && (
+                    <View style={styles.privateBadge}>
+                        <Icon name="lock" size={12} color="#FFFFFF" />
+                    </View>
+                )}
+            </View>
+
+            {/* Content Container */}
+            <View style={styles.contentContainer}>
+                {/* Title */}
+                <Text style={styles.recipeTitle} numberOfLines={2} ellipsizeMode="tail">
+                    {title}
+                </Text>
+                
+                {/* Stats Row */}
                 <View style={styles.statsRow}>
-                    
-                    {/* Thời gian nấu */}
+                    {/* Cook Time */}
                     <View style={styles.statItem}>
-                        <Icon name="clock-time-four-outline" size={14} color="#8BC34A" style={styles.statIcon} />
-                        <Text style={styles.statText}>{cookTime} phút</Text>
+                        <View style={styles.statIconBg}>
+                            <Icon name="clock-outline" size={14} color="#8BC34A" />
+                        </View>
+                        <Text style={styles.statText}>{cookTime}p</Text>
                     </View>
                     
-                    {/* Khẩu phần */}
+                    {/* Ration */}
                     <View style={styles.statItem}>
-                        <Icon name="account-group-outline" size={14} color="#8BC34A" style={styles.statIcon} />
+                        <View style={styles.statIconBg}>
+                            <Icon name="account-group-outline" size={14} color="#3B82F6" />
+                        </View>
                         <Text style={styles.statText}>{ration} người</Text>
                     </View>
                 </View>
                 
-                {/* DÒNG 2: ĐỘ KHÓ & PRIVATE ICON */}
-                <View style={styles.difficultyRow}>
-                    {/* THÊM CHỮ "Độ khó" */}
-                    <View style={styles.difficultyInfo}>
-                        <Text style={styles.difficultyLabel}>Độ khó</Text> 
-                        <View style={styles.difficultyStarsContainer}>
-                            {renderDifficultyStars(difficulty)}
-                        </View>
+                {/* Difficulty Row */}
+                <View style={styles.difficultyContainer}>
+                    <Text style={styles.difficultyLabel}>Độ khó</Text>
+                    <View style={styles.starsContainer}>
+                        {renderDifficultyStars(difficulty)}
                     </View>
-                    
-                    {isPrivate && (
-                        <View style={styles.lockContainer}>
-                            <Icon name="lock" size={14} color="#555" style={styles.lockIcon} />
-                        </View>
-                    )}
                 </View>
             </View>
         </TouchableOpacity>
     );
 };
 
-// ===========================================
-// STYLES
-// ===========================================
 const styles = StyleSheet.create({
     cardContainer: {
         width: '48%', 
-        marginVertical: 8,
-        marginHorizontal: '1%', 
-        backgroundColor: '#fff',
-        borderRadius: 10,
+        marginVertical: 6,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
         overflow: 'hidden',
-        elevation: 2, 
-        shadowColor: '#000', 
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 1.5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 3,
+    },
+    
+    // Image Section
+    imageContainer: {
+        position: 'relative',
+        width: '100%',
+        height: 130,
     },
     recipeImage: {
         width: '100%',
-        height: 120, 
+        height: '100%',
         resizeMode: 'cover',
     },
-    infoOverlay: {
-        padding: 10,
+    imageOverlay: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: '30%',
+        backgroundColor: 'rgba(0,0,0,0.1)',
     },
-    recipeTitle: {
-        fontSize: 15,
-        fontWeight: 'bold',
-        color: '#333',
-        marginBottom: 5,
-        height: 30, // Đảm bảo đủ chỗ cho 2 dòng
+    privateBadge: {
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     
-    // ⭐ DÒNG STATS (Thời gian & Khẩu phần)
+    // Content Section
+    contentContainer: {
+        padding: 12,
+    },
+    recipeTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#1F2937',
+        marginBottom: 10,
+        lineHeight: 18,
+        height: 36, // Đủ cho 2 dòng
+    },
+    
+    // Stats Row
     statsRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: 5,
+        marginBottom: 10,
+        gap: 12,
     },
     statItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        marginRight: 5,
+        gap: 4,
     },
-    statIcon: {
-        marginRight: 3,
-        color: '#8BC34A', // Màu xanh lá cho icon
+    statIconBg: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#F0F9FF',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     statText: {
-        fontSize: 13,
-        color: '#555',
+        fontSize: 12,
+        color: '#6B7280',
+        fontWeight: '600',
     },
     
-    // ⭐ DÒNG ĐỘ KHÓ
-    difficultyRow: {
+    // Difficulty Row
+    difficultyContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: 5,
-        marginLeft: 40,
+        paddingTop: 8,
+        borderTopWidth: 1,
+        borderTopColor: '#F3F4F6',
     },
-    difficultyInfo: { // Container mới để chứa label và stars
+    difficultyLabel: {
+        fontSize: 11,
+        color: '#9CA3AF',
+        fontWeight: '600',
+        letterSpacing: 0.3,
+    },
+    starsContainer: {
         flexDirection: 'row',
-        alignItems: 'center',
-    },
-    difficultyLabel: { // Style cho chữ "Độ khó"
-        fontSize: 13,
-        color: '#555',
-        marginRight: 5, // Khoảng cách giữa chữ "Độ khó" và sao
-    },
-    difficultyStarsContainer: {
-        flexDirection: 'row',
+        gap: 2,
     },
     starIcon: {
-        marginRight: 1,
+        marginHorizontal: 1,
     },
-    lockContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    lockIcon: {
-        marginLeft: 5,
-    },
-    // Đã loại bỏ styles cũ: viewsContainer, recipeViews
 });
 
 export default RecipeCard;

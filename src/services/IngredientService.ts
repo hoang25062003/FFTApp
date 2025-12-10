@@ -10,21 +10,56 @@ const BASE_URL = `${API_BASE_URL}/api`;
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 // ============================================
-// TYPES
+// TYPES (ĐÃ CẬP NHẬT)
 // ============================================
-export type Ingredient = {
-    id: string;
-    name: string;
-    imageId: string;
-};
 
-// ✅ THÊM TYPE CHO CẤU TRÚC PHẢN HỒI CỦA API
+// Type chung cho Category
+export interface Category {
+  id: string;
+  name: string;
+}
+
+// Type cho Dinh dưỡng (Nutrient)
+export interface Nutrient {
+  name: string;
+  unit: string;
+  minValue?: number;
+  maxValue?: number;
+  medianValue?: number;
+}
+
+// 1. Type cho item trong DANH SÁCH (List Item)
+// API trả về 'categoryNames' ở danh sách
+export interface Ingredient {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string; 
+  categoryNames: Category[]; // ✅ Yêu cầu của bạn
+  isNew: boolean;
+  lastUpdatedUtc: string;
+}
+
+// 2. Type cho CHI TIẾT (Details)
+// API trả về 'categories' ở chi tiết
+export interface IngredientDetail {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl: string;
+  lastUpdatedUtc: string;
+  isNew: boolean;
+  categories: Category[];    // ✅ Yêu cầu của bạn
+  nutrients: Nutrient[];     // ✅ Thêm thông tin dinh dưỡng
+}
+
+// 3. Cấu trúc phản hồi phân trang
 export interface PaginatedIngredients {
-    items: Ingredient[];
-    pageNumber: number;
-    pageSize: number;
-    totalCount: number;
-    totalPages: number;
+  items: Ingredient[];
+  pageNumber: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
 }
 
 // ============================================
@@ -64,12 +99,9 @@ class IngredientHttpClient {
         options: RequestInit = {},
         includeAuth: boolean = false
     ): Promise<T> {
-        const url = `${this.baseUrl}${endpoint}`; // URL ĐÃ BAO GỒM QUERY STRING
+        const url = `${this.baseUrl}${endpoint}`; 
 
-        // ========================================
-        // ✅ THÊM CONSOLE LOG VÀO ĐÂY ĐỂ KIỂM TRA
-        // ========================================
-        console.log(`[HTTP CLIENT] Sending GET request to: ${url}`);
+        console.log(`[HTTP CLIENT] Request: ${options.method || 'GET'} ${url}`);
         
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -83,16 +115,14 @@ class IngredientHttpClient {
             const token = await TokenManager.getToken();
             if (token) {
                 headers['Authorization'] = `Bearer ${token}`;
-                console.log('[HTTP CLIENT] Authorization Token included.');
             } else {
-                console.warn('[HTTP CLIENT] Authorization requested but token is missing.');
+                console.warn('[HTTP CLIENT] Auth requested but no token found.');
             }
         }
 
         try {
             const response = await this.fetchWithTimeout(url, { ...options, headers });
             
-            // ... (Phần xử lý response giữ nguyên)
             if (response.status === 204) return {} as T;
 
             const responseData = await response.json().catch(() => ({}));
@@ -104,20 +134,20 @@ class IngredientHttpClient {
             return responseData as T;
         } catch (error) {
             if (error instanceof ApiException) throw error;
-            const message = error instanceof Error ? error.message : 'Lỗi kết nối mạng.';
+            const message = error instanceof Error ? error.message : 'Network error.';
             throw new ApiException(message, 0);
         }
     }
 
     private handleError(response: Response, responseData: any): ApiException {
         const errorData = responseData as any;
-        let errorMessage = errorData.message || `Lỗi ${response.status}: ${response.statusText}`;
+        let errorMessage = errorData.message || `Error ${response.status}: ${response.statusText}`;
 
         if (errorData.errors) {
             const details = Object.entries(errorData.errors)
                 .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
                 .join('\n');
-            errorMessage = `Dữ liệu không hợp lệ:\n${details}`;
+            errorMessage = `Invalid data:\n${details}`;
         }
 
         return new ApiException(errorMessage, response.status, errorData.errors);
@@ -132,22 +162,48 @@ const ingredientHttpClient = new IngredientHttpClient(BASE_URL);
 // ============================================
 
 /**
- * Get all ingredients
+ * Lấy danh sách nguyên liệu có phân trang và tìm kiếm
+ * @param pageNumber Trang hiện tại (mặc định 1)
+ * @param pageSize Số lượng item/trang (mặc định 20)
+ * @param search Từ khóa tìm kiếm (tùy chọn)
  */
-export async function getIngredients(): Promise<PaginatedIngredients> { // <--- ĐÃ SỬA KIỂU TRẢ VỀ
-    const pageNumber = 1;
-    const pageSize = 50; 
-
-    const queryString = `?PaginationParams.PageNumber=${pageNumber}&PaginationParams.PageSize=${pageSize}`;
+export async function getIngredients(
+    pageNumber: number = 1,
+    pageSize: number = 20,
+    search?: string
+): Promise<PaginatedIngredients> {
+    const queryParams = new URLSearchParams();
+    queryParams.append('PaginationParams.PageNumber', pageNumber.toString());
+    queryParams.append('PaginationParams.PageSize', pageSize.toString());
     
-    return ingredientHttpClient.request<PaginatedIngredients>( // <--- ĐÃ SỬA KIỂU TRUYỀN
-        `/Ingredient${queryString}`, 
+    if (search) {
+        queryParams.append('Keyword', search);
+    }
+
+    // URLSearchParams.toString() sẽ tự động mã hóa ký tự đặc biệt
+    return ingredientHttpClient.request<PaginatedIngredients>(
+        `/Ingredient?${queryParams.toString()}`, 
         { method: 'GET' }, 
         true
     );
 }
 
-// Export everything
+/**
+ * Lấy chi tiết một nguyên liệu theo ID
+ * @param id ID của nguyên liệu
+ */
+export async function getIngredientById(id: string): Promise<IngredientDetail> {
+    if (!id) throw new Error("Ingredient ID is required");
+
+    return ingredientHttpClient.request<IngredientDetail>(
+        `/Ingredient/${id}`,
+        { method: 'GET' },
+        true
+    );
+}
+
+// Export object mặc định để dễ import
 export default {
     getIngredients,
+    getIngredientById,
 };

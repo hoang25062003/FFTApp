@@ -11,14 +11,14 @@ import {
 } from 'react-native';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { useNavigation, NavigationProp, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import HeaderApp from '../../components/HeaderApp';
 import { styles, BRAND_COLOR } from './ViewHealthMetricScreenStyles';
 import HealthMetricService, { HealthMetric } from '../../services/HealthMetricService';
-import { HealthMetricStackParamList } from '../../navigation/HealthMetricStackNavigator';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-type HealthMetricScreenNavigationProp = NativeStackNavigationProp<HealthMetricStackParamList, 'ViewHealthMetricMain'>;
+import { HealthMetricStackParamList } from '../../navigation/HealthMetricStackNavigator';
 
+type HealthMetricScreenNavigationProp = NativeStackNavigationProp<HealthMetricStackParamList, 'ViewHealthMetricMain'>;
 
 const ViewHealthMetricScreen: React.FC = () => {
   const navigation = useNavigation<HealthMetricScreenNavigationProp>();
@@ -65,7 +65,9 @@ const ViewHealthMetricScreen: React.FC = () => {
       setIsLoading(false);
     }
   };
+
   const handleBackPress = () => navigation.goBack();
+  
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchHealthMetrics();
@@ -96,9 +98,9 @@ const ViewHealthMetricScreen: React.FC = () => {
     );
   };
 
-const handleEdit = (metricId: string) => {
-  navigation.navigate('EditHealthMetric', { metricId });
-};
+  const handleEdit = (metricId: string) => {
+    navigation.navigate('EditHealthMetric', { metricId });
+  };
 
   const handleCreateNew = () => {
     navigation.navigate('CreateHealthMetric');
@@ -111,41 +113,17 @@ const handleEdit = (metricId: string) => {
   );
 
   const getBMICategory = (bmi: number): { label: string; color: string; bgColor: string } => {
-    if (bmi < 18.5) return { 
-      label: 'Gầy', 
-      color: '#3B82F6', 
-      bgColor: '#EFF6FF',
-    };
-    if (bmi < 25) return { 
-      label: 'Bình thường', 
-      color: '#10B981', 
-      bgColor: '#ECFDF5',
-    };
-    if (bmi < 30) return { 
-      label: 'Thừa cân', 
-      color: '#F59E0B', 
-      bgColor: '#FFFBEB',
-    };
-    if (bmi < 35) return { 
-      label: 'Béo phì độ 1', 
-      color: '#EF4444', 
-      bgColor: '#FEF2F2',
-    };
-    if (bmi < 40) return { 
-      label: 'Béo phì độ 2', 
-      color: '#DC2626', 
-      bgColor: '#FEE2E2',
-    };
-    return { 
-      label: 'Béo phì độ 3', 
-      color: '#991B1B', 
-      bgColor: '#FEE2E2',
-    };
+    if (bmi < 18.5) return { label: 'Gầy', color: '#3B82F6', bgColor: '#EFF6FF' };
+    if (bmi < 25) return { label: 'Bình thường', color: '#10B981', bgColor: '#ECFDF5' };
+    if (bmi < 30) return { label: 'Thừa cân', color: '#F59E0B', bgColor: '#FFFBEB' };
+    if (bmi < 35) return { label: 'Béo phì độ 1', color: '#EF4444', bgColor: '#FEF2F2' };
+    if (bmi < 40) return { label: 'Béo phì độ 2', color: '#DC2626', bgColor: '#FEE2E2' };
+    return { label: 'Béo phì độ 3', color: '#991B1B', bgColor: '#FEE2E2' };
   };
 
   if (isLoading) {
     return (
-        <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container}>
         <HeaderApp isHome={false} onBackPress={handleBackPress} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={BRAND_COLOR} />
@@ -158,7 +136,7 @@ const handleEdit = (metricId: string) => {
   if (!currentMetric) {
     return (
       <SafeAreaView style={styles.container}>
-        <HeaderApp isHome={false}/>
+        <HeaderApp isHome={false} onBackPress={handleBackPress} />
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconWrapper}>
             <MaterialIcon name="clipboard-text-outline" size={80} color="#E5E7EB" />
@@ -180,7 +158,7 @@ const handleEdit = (metricId: string) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <HeaderApp isHome={false}/>
+      <HeaderApp isHome={false} onBackPress={handleBackPress} />
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -189,6 +167,7 @@ const handleEdit = (metricId: string) => {
           <RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} colors={[BRAND_COLOR]} />
         }
       >
+        {/* Header Section */}
         <View style={styles.headerSection}>
           <View style={styles.headerBackground}>
             <View style={styles.decorativeCircle1} />
@@ -201,7 +180,7 @@ const handleEdit = (metricId: string) => {
 
               <TouchableOpacity style={styles.recordButton} onPress={handleCreateNew}>
                 <View style={styles.iconCircle}>
-                    <MaterialIcon name="plus" size={16} color={BRAND_COLOR} />
+                  <MaterialIcon name="plus" size={16} color={BRAND_COLOR} />
                 </View>
                 <Text style={styles.recordButtonText}>Ghi số liệu</Text>
               </TouchableOpacity>
@@ -209,6 +188,7 @@ const handleEdit = (metricId: string) => {
           </View>
         </View>
 
+        {/* Date Card */}
         <View style={styles.dateCard}>
           <View style={styles.dateHeader}>
             <View style={styles.dateIconContainer}>
@@ -238,6 +218,7 @@ const handleEdit = (metricId: string) => {
           </View>
         </View>
 
+        {/* BMI Highlight Card */}
         <View style={[styles.bmiHighlightCard, { backgroundColor: bmiCategory.bgColor, borderColor: bmiCategory.color }]}>
           <View style={styles.bmiContentRow}>
             <View style={styles.bmiHeader}>
@@ -263,6 +244,7 @@ const handleEdit = (metricId: string) => {
           </View>
         </View>
 
+        {/* Metrics Container */}
         <View style={styles.metricsContainer}>
           <View style={styles.sectionHeader}>
             <MaterialIcon name="clipboard-text-outline" size={22} color={BRAND_COLOR} />
@@ -320,6 +302,7 @@ const handleEdit = (metricId: string) => {
           </View>
         </View>
 
+        {/* Energy Container */}
         <View style={styles.energyContainer}>
           <View style={styles.sectionHeader}>
             <MaterialIcon name="fire-circle" size={22} color="#F59E0B" />
@@ -359,6 +342,7 @@ const handleEdit = (metricId: string) => {
           </View>
         </View>
 
+        {/* Notes Card */}
         {currentMetric.notes && (
           <View style={styles.noteCard}>
             <View style={styles.noteHeader}>
@@ -369,6 +353,7 @@ const handleEdit = (metricId: string) => {
           </View>
         )}
 
+        {/* History Header */}
         <TouchableOpacity
           style={styles.historyHeader}
           onPress={() => setExpandedHistory(!expandedHistory)}
@@ -387,6 +372,7 @@ const handleEdit = (metricId: string) => {
           />
         </TouchableOpacity>
 
+        {/* History Content */}
         {expandedHistory && (
           <View style={styles.historyContent}>
             {historyMetrics.length === 0 ? (
@@ -399,29 +385,128 @@ const handleEdit = (metricId: string) => {
                 </Text>
               </>
             ) : (
-              historyMetrics.map((metric) => (
-                <View key={metric.id} style={styles.historyItem}>
-                  <View style={styles.historyItemHeader}>
-                    <Text style={styles.historyItemDate}>
-                      {formatDate(metric.recordedAt)}
-                    </Text>
-                    <Text style={styles.historyItemTime}>
-                      {formatTime(metric.recordedAt)}
-                    </Text>
+              historyMetrics.map((metric) => {
+                const bmiCat = getBMICategory(metric.bmi);
+                return (
+                  <View key={metric.id} style={styles.historyItem}>
+                    {/* Header: Date & Time with Delete Button */}
+                    <View style={styles.historyItemHeader}>
+                      <View style={styles.historyItemDateContainer}>
+                        <View style={styles.historyItemCalendarIcon}>
+                          <MaterialIcon name="calendar" size={16} color={BRAND_COLOR} />
+                        </View>
+                        <View>
+                          <Text style={styles.historyItemDate}>
+                            {formatDate(metric.recordedAt)}
+                          </Text>
+                          <View style={styles.historyItemTimeRow}>
+                            <Ionicons name="time-outline" size={12} color="#9CA3AF" />
+                            <Text style={styles.historyItemTime}>
+                              {formatTime(metric.recordedAt)}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.historyDeleteButton}
+                        onPress={() => handleDelete(metric.id)}
+                      >
+                        <MaterialIcon name="delete-outline" size={18} color="#EF4444" />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* Body Metrics - Vertical Layout */}
+                    {/* Row 1: Cân nặng & Chiều cao */}
+                    <View style={styles.historyMetricsGrid}>
+                      <View style={styles.historyMetricBox}>
+                        <Text style={styles.historyMetricLabel}>CÂN NẶNG</Text>
+                        <View style={styles.historyMetricValueRow}>
+                          <Text style={styles.historyMetricValue}>{metric.weightKg}</Text>
+                          <Text style={styles.historyMetricUnit}>kg</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.historyMetricBox}>
+                        <Text style={styles.historyMetricLabel}>CHIỀU CAO</Text>
+                        <View style={styles.historyMetricValueRow}>
+                          <Text style={styles.historyMetricValue}>{metric.heightCm}</Text>
+                          <Text style={styles.historyMetricUnit}>cm</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Row 2: Tỷ lệ mỡ & Khối lượng cơ */}
+                    <View style={styles.historyMetricsGrid}>
+                      <View style={styles.historyMetricBox}>
+                        <Text style={styles.historyMetricLabel}>TỶ LỆ MỠ</Text>
+                        <View style={styles.historyMetricValueRow}>
+                          <Text style={styles.historyMetricValue}>
+                            {metric.bodyFatPercent ? metric.bodyFatPercent.toFixed(1) : '--'}
+                          </Text>
+                          <Text style={styles.historyMetricUnit}>%</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.historyMetricBox}>
+                        <Text style={styles.historyMetricLabel}>KHỐI LƯỢNG CƠ</Text>
+                        <View style={styles.historyMetricValueRow}>
+                          <Text style={styles.historyMetricValue}>
+                            {metric.muscleMassKg ? metric.muscleMassKg.toFixed(1) : '--'}
+                          </Text>
+                          <Text style={styles.historyMetricUnit}>kg</Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Row 3: BMI & BMR */}
+                                        <View style={styles.historyMetricsGrid}>
+                      <View style={[styles.historyMetricBox, styles.historyBMIBox]}>
+                        <Text style={styles.historyMetricLabel}>BMI</Text>
+                        <View style={styles.historyMetricValueRow}>
+                          <Text style={[styles.historyMetricValue, { color: bmiCat.color }]}>
+                            {metric.bmi.toFixed(2)}
+                          </Text>
+                        </View>
+                      </View>
+
+                      <View style={[styles.historyMetricBox, styles.historyBMRBox]}>
+                        <Text style={styles.historyMetricLabel}>BMR</Text>
+                        <View style={styles.historyMetricValueRow}>
+                          <Text style={[styles.historyMetricValue, { color: '#F59E0B' }]}>
+                            {Math.round(metric.bmr)}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* TDEE - Full Width */}
+                    <View style={styles.historyTDEEBox}>
+                      <View style={styles.historyTDEEContent}>
+                        <View style={styles.historyTDEEIconBg}>
+                          <MaterialIcon name="fire" size={20} color="#FFFFFF" />
+                        </View>
+                        <View style={styles.historyTDEETextBox}>
+                          <Text style={styles.historyTDEELabel}>CALO HÀNG NGÀY (TDEE)</Text>
+                          <View style={styles.historyTDEEValueRow}>
+                            <Text style={styles.historyTDEEValue}>{Math.round(metric.tdee)}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+
+                    {/* Notes */}
+                    {metric.notes && (
+                      <View style={styles.historyNoteBox}>
+                        <View style={styles.historyNoteHeader}>
+                          <MaterialIcon name="note-text-outline" size={14} color="#6B7280" />
+                          <Text style={styles.historyNoteLabel}>GHI CHÚ</Text>
+                        </View>
+                        <Text style={styles.historyNoteText}>{metric.notes}</Text>
+                      </View>
+                    )}
                   </View>
-                  <View style={styles.historyItemStats}>
-                    <Text style={styles.historyItemStat}>
-                      BMI: {metric.bmi.toFixed(1)}
-                    </Text>
-                    <Text style={styles.historyItemStat}>
-                      {metric.weightKg}kg
-                    </Text>
-                    <Text style={styles.historyItemStat}>
-                      {metric.heightCm}cm
-                    </Text>
-                  </View>
-                </View>
-              ))
+                );
+              })
             )}
           </View>
         )}

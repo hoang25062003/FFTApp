@@ -8,8 +8,10 @@ import {
   FlatList,
   StyleSheet,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { getLabels, Label } from '../services/LabelService';
+
+const BRAND_COLOR = '#8BC34A';
 
 interface LabelSelectorProps {
   selectedLabels: Label[];
@@ -60,10 +62,8 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
 
   const handleToggleLabel = (label: Label) => {
     if (isLabelSelected(label.id)) {
-      // Remove label
       onLabelsChange(selectedLabels.filter((l) => l.id !== label.id));
     } else {
-      // Add label
       onLabelsChange([...selectedLabels, label]);
     }
   };
@@ -84,20 +84,34 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
 
   return (
     <View>
-      {/* Selected Labels Tags */}
+      {/* Selected Labels */}
       {selectedLabels.length > 0 && (
-        <View style={styles.selectedTagsContainer}>
-          {selectedLabels.map((label) => (
-            <View
-              key={label.id}
-              style={[styles.labelTag, { backgroundColor: label.colorCode }]}
-            >
-              <Text style={styles.labelTagText}>{label.name}</Text>
-              <TouchableOpacity onPress={() => handleRemoveLabel(label.id)}>
-                <Icon name="close" size={16} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          ))}
+        <View style={styles.selectedContainer}>
+          <View style={styles.selectedHeader}>
+            <Icon name="tag-multiple" size={16} color="#6B7280" />
+            <Text style={styles.selectedHeaderText}>
+              Đã chọn ({selectedLabels.length})
+            </Text>
+          </View>
+          <View style={styles.tagsWrapper}>
+            {selectedLabels.map((label) => (
+              <View
+                key={label.id}
+                style={[styles.tag, { backgroundColor: label.colorCode + '20', borderColor: label.colorCode }]}
+              >
+                <View style={[styles.colorDot, { backgroundColor: label.colorCode }]} />
+                <Text style={[styles.tagText, { color: label.colorCode }]}>
+                  {label.name}
+                </Text>
+                <TouchableOpacity 
+                  onPress={() => handleRemoveLabel(label.id)}
+                  style={styles.removeButton}
+                >
+                  <Icon name="close-circle" size={16} color={label.colorCode} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
         </View>
       )}
 
@@ -107,177 +121,356 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
         onPress={handleOpenDropdown}
         activeOpacity={0.7}
       >
-        <TextInput
-          style={styles.input}
-          placeholder="Thêm nhãn..."
-          editable={false}
-          pointerEvents="none"
-        />
-        <Icon name="chevron-down" size={20} color="#999" />
+        <View style={styles.inputIconBg}>
+          <Icon name="tag-plus" size={18} color={BRAND_COLOR} />
+        </View>
+        <Text style={styles.inputPlaceholder}>Thêm nhãn...</Text>
+        <Icon name="chevron-down" size={20} color="#6B7280" />
       </TouchableOpacity>
 
-      {/* Dropdown Modal */}
+      {/* Modal */}
       <Modal
         visible={isDropdownVisible}
         transparent
-        animationType="fade"
+        animationType="slide"
         onRequestClose={handleCloseDropdown}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={handleCloseDropdown}
-        >
-          <View style={styles.dropdownContainer}>
-            {/* Search Input */}
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            {/* Header */}
+            <View style={styles.modalHeader}>
+              <View style={styles.modalTitleRow}>
+                <View style={styles.modalIconBg}>
+                  <Icon name="tag-multiple" size={20} color={BRAND_COLOR} />
+                </View>
+                <Text style={styles.modalTitle}>Chọn nhãn</Text>
+              </View>
+              <TouchableOpacity onPress={handleCloseDropdown} style={styles.closeButton}>
+                <Icon name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Search */}
             <View style={styles.searchContainer}>
-              <Icon name="search" size={20} color="#999" />
+              <Icon name="magnify" size={20} color="#6B7280" />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Tìm kiếm nhãn..."
+                placeholderTextColor="#9CA3AF"
                 value={searchText}
                 onChangeText={setSearchText}
                 autoFocus
               />
+              {searchText.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchText('')}>
+                  <Icon name="close-circle" size={20} color="#9CA3AF" />
+                </TouchableOpacity>
+              )}
             </View>
 
-            {/* Labels List */}
+            {/* List */}
             <FlatList
               data={filteredLabels}
               keyExtractor={(item) => item.id}
-              style={styles.labelsList}
+              style={styles.list}
               showsVerticalScrollIndicator={true}
               ListEmptyComponent={
-                <Text style={styles.emptyText}>
-                  {loading ? 'Đang tải...' : 'Không tìm thấy nhãn'}
-                </Text>
+                <View style={styles.emptyContainer}>
+                  <Icon 
+                    name={loading ? 'loading' : 'tag-off-outline'} 
+                    size={48} 
+                    color="#D1D5DB" 
+                  />
+                  <Text style={styles.emptyText}>
+                    {loading ? 'Đang tải...' : 'Không tìm thấy nhãn'}
+                  </Text>
+                </View>
               }
               renderItem={({ item }) => {
                 const selected = isLabelSelected(item.id);
                 return (
                   <TouchableOpacity
-                    style={styles.labelItem}
+                    style={[
+                      styles.labelItem,
+                      selected && styles.labelItemSelected
+                    ]}
                     onPress={() => handleToggleLabel(item)}
                   >
-                    <View style={styles.labelItemLeft}>
-                      <View
-                        style={[
-                          styles.colorDot,
-                          { backgroundColor: item.colorCode },
-                        ]}
-                      />
-                      <Text style={styles.labelItemText}>{item.name}</Text>
+                    <View style={styles.labelItemContent}>
+                      <View style={[
+                        styles.checkbox,
+                        selected && styles.checkboxSelected,
+                        { borderColor: item.colorCode }
+                      ]}>
+                        {selected && (
+                          <Icon name="check" size={14} color="#FFFFFF" />
+                        )}
+                      </View>
+                      <View style={[styles.colorDot, { backgroundColor: item.colorCode }]} />
+                      <Text style={[
+                        styles.labelItemText,
+                        selected && styles.labelItemTextSelected
+                      ]}>
+                        {item.name}
+                      </Text>
                     </View>
                     {selected && (
-                      <Icon name="checkmark-circle" size={20} color="#27ae60" /> 
+                      <View style={[styles.selectedBadge, { backgroundColor: item.colorCode }]}>
+                        <Text style={styles.selectedBadgeText}>✓</Text>
+                      </View>
                     )}
                   </TouchableOpacity>
                 );
               }}
             />
+
+            {/* Footer */}
+            <View style={styles.modalFooter}>
+              <TouchableOpacity 
+                style={styles.doneButton}
+                onPress={handleCloseDropdown}
+              >
+                <Icon name="check-circle" size={20} color="#FFFFFF" />
+                <Text style={styles.doneButtonText}>Xong</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  selectedTagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+  // Selected Labels
+  selectedContainer: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 12,
     marginBottom: 12,
-    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
-  labelTag: {
+  selectedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
     gap: 6,
+    marginBottom: 10,
   },
-  labelTagText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '500',
+  selectedHeaderText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#6B7280',
   },
+  tagsWrapper: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 12,
+    gap: 6,
+    borderWidth: 1.5,
+  },
+  colorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  tagText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  removeButton: {
+    marginLeft: 2,
+  },
+
+  // Input
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    gap: 10,
   },
-  input: {
+  inputIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F0F9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inputPlaceholder: {
     flex: 1,
     fontSize: 15,
-    color: '#333',
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
+
+  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
+    justifyContent: 'flex-end',
   },
-  dropdownContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    width: '100%',
-    maxHeight: '70%',
-    overflow: 'hidden',
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
   },
-  searchContainer: {
+  modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    gap: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#333',
-  },
-  labelsList: {
-    maxHeight: 400,
-  },
-  labelItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    borderBottomColor: '#F3F4F6',
   },
-  labelItemLeft: {
+  modalTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  colorDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+  modalIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F9FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#1F2937',
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F9FAFB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 10,
+    backgroundColor: '#F9FAFB',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  list: {
+    maxHeight: 400,
+  },
+  labelItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  labelItemSelected: {
+    backgroundColor: '#F0F9FF',
+  },
+  labelItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    flex: 1,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  checkboxSelected: {
+    backgroundColor: BRAND_COLOR,
+    borderColor: BRAND_COLOR,
   },
   labelItemText: {
     fontSize: 15,
-    color: '#333',
+    color: '#4B5563',
+    fontWeight: '500',
+    flex: 1,
   },
-  selectedText: {
-    fontSize: 13,
-    color: '#999',
+  labelItemTextSelected: {
+    color: '#1F2937',
+    fontWeight: '700',
+  },
+  selectedBadge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  selectedBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
   },
   emptyText: {
-    textAlign: 'center',
-    color: '#999',
-    fontSize: 14,
-    paddingVertical: 24,
+    color: '#9CA3AF',
+    fontSize: 15,
+    fontWeight: '500',
+    marginTop: 12,
+  },
+  modalFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  doneButton: {
+    flexDirection: 'row',
+    backgroundColor: BRAND_COLOR,
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  doneButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });
 

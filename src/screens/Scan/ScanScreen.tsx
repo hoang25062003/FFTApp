@@ -6,36 +6,34 @@ import {
     StatusBar,
     Image,
     Alert,
-    ActivityIndicator, 
+    ActivityIndicator,
+    ScrollView,
+    SafeAreaView
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import HeaderApp from '../../components//HeaderApp';
+import HeaderApp from '../../components/HeaderApp';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { SafeAreaView } from 'react-native-safe-area-context';
+// import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Import Types và Service
-import styles from './ScanScreenStyles'; 
-import ScanService, { DetectedIngredientResponse } from '../../services/ScanService';
-import { ScanStackParamList } from '../../navigation/ScanStackNavigator'; // Import ScanStackParamList
+import styles from './ScanScreenStyles';
+import ScanService from '../../services/ScanService';
+import { ScanStackParamList } from '../../navigation/ScanStackNavigator';
 
-// Định nghĩa kiểu dữ liệu cho Navigation Prop
 type ScanScreenNavigationProp = NavigationProp<ScanStackParamList, 'ScanMain'>;
 
 const ScanScreen: React.FC = () => {
-    // Sử dụng kiểu dữ liệu đã định nghĩa
-    const navigation = useNavigation<ScanScreenNavigationProp>(); 
-    
-    // Trạng thái ảnh đã chọn
+    const navigation = useNavigation<ScanScreenNavigationProp>();
+
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    // Trạng thái thông báo lỗi
     const [errorText, setErrorText] = useState<string | null>(null);
-    // Trạng thái loading khi gọi API
     const [isLoading, setIsLoading] = useState<boolean>(false);
 
     const handleBackPress = () => navigation.goBack();
+
     const handleImageUpload = async () => {
-        if (isLoading) return; 
+        if (isLoading) return;
 
         setErrorText(null);
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -49,14 +47,13 @@ const ScanScreen: React.FC = () => {
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [4, 3],
-            quality: 0.8, 
+            quality: 0.8,
         });
 
         if (!pickerResult.canceled) {
             setSelectedImage(pickerResult.assets[0].uri);
         }
     };
-
 
     const handleCameraCapture = async () => {
         if (isLoading) return;
@@ -91,28 +88,27 @@ const ScanScreen: React.FC = () => {
             setErrorText(null);
 
             const results = await ScanService.detectIngredients({ image: selectedImage });
-            
+
             console.log('Kết quả Scan:', results);
 
-            if (results && results.length > 0) {
-                navigation.navigate('ScanResult', {
-                    results: results,
-                    imageUri: selectedImage
-                });
+            if (results && results.length > 0) {
+                navigation.navigate('ScanResult', {
+                    results: results,
+                    imageUri: selectedImage
+                });
+            } else {
+                Alert.alert("Thông báo", "Không tìm thấy nguyên liệu nào rõ ràng trong ảnh.");
+            }
 
-            } else {
-                Alert.alert("Thông báo", "Không tìm thấy nguyên liệu nào rõ ràng trong ảnh.");
-            }
-
-        } catch (error: any) {
-            console.error("Lỗi khi scan:", error);
-            const message = error.message || 'Đã xảy ra lỗi không xác định.';
-            setErrorText(message);
-            Alert.alert("Lỗi phân tích", message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
+        } catch (error: any) {
+            console.error("Lỗi khi scan:", error);
+            const message = error.message || 'Đã xảy ra lỗi không xác định.';
+            setErrorText(message);
+            Alert.alert("Lỗi phân tích", message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleRemoveImage = () => {
         if (isLoading) return;
@@ -121,103 +117,155 @@ const ScanScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={styles.safeArea} edges={['bottom']}>
+        <SafeAreaView style={styles.container} >
+            <StatusBar barStyle="dark-content" backgroundColor="#8BC34A" />
             <HeaderApp isHome={false} onBackPress={handleBackPress} />
 
-
-            <View style={styles.container}>
-                
-                <View style={styles.contentWrapper}>
-
-                    <View style={styles.instructionContainer}>
-                        <Text style={styles.headerTitle}>Nhận diện nguyên liệu</Text>
-                    </View>
-
-                    <View style={styles.scanAreaWrapper}>
-                        {selectedImage ? (
-                            <View style={styles.imagePreviewContainer}>
-                                <Image source={{ uri: selectedImage }} style={styles.previewImage} />
-
-                                {!isLoading && (
-                                    <TouchableOpacity style={styles.closeButton} onPress={handleRemoveImage}>
-                                    <Icon name="close" size={20} color="#fff" />
-                                    </TouchableOpacity>
-                                )}
-
-                                {isLoading && (
-                                    <View style={{
-                                        position: 'absolute',
-                                        top: 0, left: 0, right: 0, bottom: 0,
-                                        backgroundColor: 'rgba(0,0,0,0.4)',
-                                        justifyContent: 'center',
-                                        alignItems: 'center',
-                                        borderRadius: 12,
-                                    }}>
-                                        <ActivityIndicator size="large" color="#8BC34A" />
-                                        <Text style={{color: '#fff', marginTop: 10, fontWeight: '600'}}>Đang phân tích...</Text>
-                                    </View>
-                                )}
-                            </View>
-                        ) : (
-
-                            <TouchableOpacity 
-                                style={styles.dashedBox} 
-                                activeOpacity={0.7}
-                                onPress={handleCameraCapture} // Nhấn vào khung để chụp ảnh
-                                disabled={isLoading}
-                            >
-                                <View style={styles.iconCircle}>
-                                    <Icon name="camera-iris" size={40} color="#8BC34A" />
+            <View style={styles.innerContainer}>
+                <ScrollView
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={{ paddingBottom: 40 }}
+                >
+                    {/* Header Section */}
+                    <View style={styles.headerSection}>
+                        <View style={styles.headerBackground}>
+                            <View style={styles.decorativeCircle1} />
+                            <View style={styles.decorativeCircle2} />
+                            <View style={styles.headerContent}>
+                                <View>
+                                    <Text style={styles.headerTitle}>Nhận Diện Nguyên Liệu</Text>
+                                    <Text style={styles.headerSubtitle}>Chụp ảnh để AI phân tích món ăn</Text>
                                 </View>
-                                <Text style={styles.scanHintText}>Nhấn để chụp ảnh</Text>
-                                <Text style={styles.scanSubHint}>hoặc chọn từ thư viện bên dưới</Text>
-                            </TouchableOpacity>
-                        )}
+                                <View style={styles.headerIconContainer}>
+                                    <Icon name="camera-iris" size={28} color="rgba(255,255,255,0.9)" />
+                                </View>
+                            </View>
+                        </View>
                     </View>
 
+                    {/* Image Preview Card */}
+                    <View style={styles.card}>
+                        <View style={styles.sectionHeader}>
+                            <Icon name="image-multiple" size={18} color="#8BC34A" />
+                            <Text style={styles.sectionTitle}>Hình ảnh món ăn</Text>
+                            <Text style={styles.required}>*</Text>
+                        </View>
+                        <Text style={styles.sectionHint}>Chụp hoặc chọn ảnh món ăn để phân tích</Text>
+
+                        <View style={styles.imagePreviewWrapper}>
+                            {selectedImage ? (
+                                <View style={styles.imagePreviewContainer}>
+                                    <Image source={{ uri: selectedImage }} style={styles.previewImage} />
+
+                                    {!isLoading && (
+                                        <TouchableOpacity style={styles.removeImageButton} onPress={handleRemoveImage}>
+                                            <Icon name="close" size={18} color="#fff" />
+                                        </TouchableOpacity>
+                                    )}
+
+                                    {isLoading && (
+                                        <View style={styles.loadingOverlay}>
+                                            <ActivityIndicator size="large" color="#8BC34A" />
+                                            <Text style={styles.loadingText}>Đang phân tích...</Text>
+                                        </View>
+                                    )}
+                                </View>
+                            ) : (
+                                <TouchableOpacity
+                                    style={styles.imagePlaceholder}
+                                    activeOpacity={0.7}
+                                    onPress={handleCameraCapture}
+                                    disabled={isLoading}
+                                >
+                                    <View style={styles.iconCircle}>
+                                        <Icon name="camera-iris" size={48} color="#8BC34A" />
+                                    </View>
+                                    <Text style={styles.placeholderText}>Nhấn để chụp ảnh</Text>
+                                    <Text style={styles.placeholderSubtext}>hoặc chọn từ thư viện bên dưới</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
+
+                        {/* Upload Button */}
+                        <TouchableOpacity
+                            style={[
+                                styles.uploadButton,
+                                (!!selectedImage || isLoading) && styles.uploadButtonDisabled
+                            ]}
+                            onPress={handleImageUpload}
+                            disabled={!!selectedImage || isLoading}
+                        >
+                            <Icon
+                                name="image-outline"
+                                size={20}
+                                color={selectedImage || isLoading ? '#9CA3AF' : '#8BC34A'}
+                            />
+                            <Text style={[
+                                styles.uploadButtonText,
+                                (selectedImage || isLoading) && styles.uploadButtonTextDisabled
+                            ]}>
+                                Chọn từ Thư viện ảnh
+                            </Text>
+                        </TouchableOpacity>
+
+  
+                        <View style={styles.analyzeButtonContainer}>
+
+                            
+                            <TouchableOpacity
+                                style={[
+                                    styles.analyzeButton,
+                                    (!selectedImage || isLoading) && styles.analyzeButtonDisabled
+                                ]}
+                                onPress={handleStartScan}
+                                disabled={!selectedImage || isLoading}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <ActivityIndicator size="small" color="#FFFFFF" />
+                                        <Text style={styles.analyzeButtonText}>Đang phân tích...</Text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Icon name="magnify-scan" size={20} color="#FFFFFF" />
+                                        <Text style={styles.analyzeButtonText}>
+                                            {selectedImage ? 'Bắt đầu phân tích' : 'Vui lòng chọn ảnh'}
+                                        </Text>
+                                    </>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+
+                    </View>
+
+                    {/* Error Message */}
                     {errorText && (
-                        <View style={styles.errorContainer}>
-                            <Icon name="alert-circle" size={18} color="#D32F2F" />
-                            <Text style={styles.errorText}>{errorText}</Text>
+                        <View style={styles.errorCard}>
+                            <View style={styles.errorIconContainer}>
+                                <Icon name="alert-circle" size={20} color="#EF4444" />
+                            </View>
+                            <View style={styles.errorTextContainer}>
+                                <Text style={styles.errorTitle}>Có lỗi xảy ra</Text>
+                                <Text style={styles.errorText}>{errorText}</Text>
+                            </View>
                         </View>
                     )}
 
-                </View>
+                    {/* Info Card */}
+                    <View style={styles.infoCard}>
+                        <View style={styles.infoIconContainer}>
+                            <Icon name="information-outline" size={20} color="#8BC34A" />
+                        </View>
+                        <View style={styles.infoTextContainer}>
+                            <Text style={styles.infoTitle}>Mẹo hay</Text>
+                            <Text style={styles.infoText}>
+                                Chụp ảnh rõ nét và đầy đủ các nguyên liệu để có kết quả tốt nhất.
+                            </Text>
+                        </View>
+                    </View>
 
-                <View style={styles.actionContainer}>
-
-                    <TouchableOpacity 
-                        style={styles.uploadButton} 
-                        onPress={handleImageUpload} 
-                        disabled={!!selectedImage || isLoading}
-                    >
-                        <Icon name="image-outline" size={24} color={selectedImage || isLoading ? '#ccc' : '#8BC34A'} />
-                        <Text style={[styles.uploadButtonText, (selectedImage || isLoading) && {color: '#ccc'}]}>
-                            Chọn từ Thư viện
-                        </Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={[
-                            styles.primaryButton,
-                            (!selectedImage || isLoading) && styles.disabledButton 
-                        ]}
-                        onPress={handleStartScan}
-                        disabled={!selectedImage || isLoading}
-                    >
-                        {isLoading ? (
-                            <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                            <>
-                                <Text style={styles.primaryButtonText}>
-                                {selectedImage ? 'Bắt đầu Phân tích' : 'Vui lòng chọn ảnh'}
-                                </Text>
-                                {selectedImage && <Icon name="arrow-right" size={20} color="#fff" style={{marginLeft: 8}} />}
-                            </>
-                        )}
-                    </TouchableOpacity>
-                </View>
-
+                </ScrollView>
+                {/* Đã xóa View Footer ở đây */}
             </View>
         </SafeAreaView>
     );
