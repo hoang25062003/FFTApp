@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { API_BASE_URL } from '@env';
 import styles from './ViewRecipeScreenStyles';
-import { getRecipeById, RecipeDetail } from '../../services/RecipeService';
+import { getRecipeById, RecipeDetail, deleteRecipe } from '../../services/RecipeService';
 import UserService from '../../services/UserService';
 import RatingService, { 
   AverageRatingResponse, 
@@ -24,6 +24,7 @@ import RatingService, {
   getAverageRating
 } from '../../services/RatingService';
 import HeaderApp from '../../components/HeaderApp';
+import ReportDialog from '../../components/ReportDialog';
 
 type RootStackParamList = {
   ViewRecipe: { recipeId: string };
@@ -44,14 +45,24 @@ const ViewRecipeScreen: React.FC = () => {
   const [isOwner, setIsOwner] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>('detail');
+  const [currentUserEmail, setCurrentUserEmail] = useState('');
 
   // --- Rating State ---
-  const [avgRatingData, setAvgRatingData] = useState<AverageRatingResponse>({ avgRating: 4.5, ratingCount: 0 }); // Default 4.5
+  const [avgRatingData, setAvgRatingData] = useState<AverageRatingResponse>({ avgRating: 4.5, ratingCount: 0 });
   const [reviews, setReviews] = useState<RatingResponse[]>([]);
   const [userRating, setUserRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // --- Focus & Validation State ---
+  const [isCommentFocused, setIsCommentFocused] = useState(false);
+  const [commentError, setCommentError] = useState('');
+
+  // --- Report Dialog State ---
+  const [reportDialogVisible, setReportDialogVisible] = useState(false);
+  const [reportTargetId, setReportTargetId] = useState<string>('');
+  const [reportTargetType, setReportTargetType] = useState<'recipe' | 'rating'>('rating');
 
   useEffect(() => {
     loadAllData();
@@ -75,11 +86,12 @@ const ViewRecipeScreen: React.FC = () => {
   // Hàm load riêng cho dữ liệu công thức
   const loadRecipeData = async () => {
     try {
-      let currentUserEmail = '';
+      let userEmail = '';
       try {
         const userProfile = await UserService.getUserProfile();
         if (userProfile.email) {
-          currentUserEmail = userProfile.email;
+          userEmail = userProfile.email;
+          setCurrentUserEmail(userEmail);
         }
       } catch (err) {
         console.log('⚠️ User chưa đăng nhập hoặc lỗi lấy profile');
@@ -89,8 +101,8 @@ const ViewRecipeScreen: React.FC = () => {
       setRecipe(data);
 
       let isOwnerResult = false;
-      if (currentUserEmail && data.author?.email) {
-        isOwnerResult = currentUserEmail.toLowerCase() === data.author.email.toLowerCase();
+      if (userEmail && data.author?.email) {
+        isOwnerResult = userEmail.toLowerCase() === data.author.email.toLowerCase();
       }
 
       setIsOwner(isOwnerResult);
@@ -101,18 +113,13 @@ const ViewRecipeScreen: React.FC = () => {
     }
   };
 
-  // Hàm load riêng cho dữ liệu đánh giá (Đã sửa logic Hardcode)
+  // Hàm load riêng cho dữ liệu đánh giá
   const loadRatingData = async () => {
     try {
-      // --- THAY ĐỔI Ở ĐÂY ---
-      // 1. Không gọi API lấy điểm trung bình nữa, set cứng 4.5
-      // const avgData = await RatingService.getAverageRating(recipeId); 
-      
-      const avgData = { avgRating: 4.5, ratingCount: 10 }; // Hardcode 4.5 và giả lập 10 đánh giá
+      const avgData = { avgRating: 4.5, ratingCount: 2 };
       console.log('✅ Average Rating (Hardcoded):', avgData);
       setAvgRatingData(avgData);
 
-      // 2. Lấy danh sách đánh giá (Protected API)
       try {
         const ratingsData = await RatingService.getRecipeRatings(recipeId, { 
           pageNumber: 1, 
@@ -120,12 +127,6 @@ const ViewRecipeScreen: React.FC = () => {
         });
         
         console.log('✅ Ratings Data:', JSON.stringify(ratingsData, null, 2));
-        
-        // Nếu muốn cập nhật số lượng đánh giá thật từ list thay vì số 10 giả lập ở trên:
-        if (ratingsData.items && ratingsData.items.length > 0) {
-           // setAvgRatingData({ avgRating: 4.5, ratingCount: ratingsData.items.length });
-        }
-        
         setReviews(ratingsData.items || []);
       } catch (authError: any) {
         console.log('⚠️ Khách chưa đăng nhập hoặc lỗi lấy list rating:', authError.message);
@@ -133,7 +134,6 @@ const ViewRecipeScreen: React.FC = () => {
       }
     } catch (error: any) {
       console.error('❌ Error loading ratings:', error.message);
-      // Đặt giá trị mặc định nếu có lỗi (vẫn giữ 4.5)
       setAvgRatingData({ avgRating: 4.5, ratingCount: 0 });
       setReviews([]);
     }
@@ -145,10 +145,11 @@ const ViewRecipeScreen: React.FC = () => {
     setRefreshing(false);
   }, [recipeId]);
 
-  // --- Xử lý gửi đánh giá (API mới) ---
+  // --- Xử lý gửi đánh giá (Có validation) ---
   const handleSendReview = async () => {
-    if (!reviewComment.trim()) {
-      Alert.alert('Thông báo', 'Vui lòng nhập nội dung đánh giá.');
+    // Validate: Nếu rating < 4 thì bắt buộc phải có comment
+    if (userRating < 4 && !reviewComment.trim()) {
+      setCommentError('Bắt buộc phải nhập nhận xét khi đánh giá dưới 4 sao');
       return;
     }
 
@@ -163,6 +164,7 @@ const ViewRecipeScreen: React.FC = () => {
       Alert.alert('Cảm ơn!', 'Đánh giá của bạn đã được gửi thành công.');
       setReviewComment('');
       setUserRating(5);
+      setCommentError('');
       
       // Reload lại dữ liệu đánh giá
       await loadRatingData();
@@ -174,6 +176,108 @@ const ViewRecipeScreen: React.FC = () => {
     } finally {
       setSubmittingReview(false);
     }
+  };
+
+  // --- Xử lý xóa rating ---
+  const handleDeleteRating = (ratingId: string) => {
+    Alert.alert(
+      'Xác nhận xóa',
+      'Bạn có chắc chắn muốn xóa đánh giá này?',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel'
+        },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await RatingService.deleteRating(ratingId);
+              Alert.alert('Thành công', 'Đánh giá đã được xóa.');
+              await loadRatingData();
+            } catch (error: any) {
+              console.error('❌ Error deleting rating:', error);
+              Alert.alert('Lỗi', error.message || 'Không thể xóa đánh giá.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // --- Xử lý báo cáo rating ---
+  const handleReportRating = (ratingId: string) => {
+    setReportTargetId(ratingId);
+    setReportTargetType('rating');
+    setReportDialogVisible(true);
+  };
+
+  // --- Xử lý khi thay đổi rating ---
+  const handleRatingChange = (rating: number) => {
+    setUserRating(rating);
+    // Clear error khi rating >= 4
+    if (rating >= 4) {
+      setCommentError('');
+    }
+  };
+
+  // --- Xử lý khi thay đổi comment ---
+  const handleCommentChange = (text: string) => {
+    setReviewComment(text);
+    // Clear error khi user bắt đầu nhập
+    if (commentError && text.trim()) {
+      setCommentError('');
+    }
+  };
+
+  // --- Xử lý xóa công thức ---
+  const handleDeleteRecipe = () => {
+    Alert.alert(
+      'Xác nhận xóa',
+      'Bạn có chắc chắn muốn xóa công thức này? Hành động này không thể hoàn tác.',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel'
+        },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await deleteRecipe(recipeId);
+              Alert.alert('Thành công', 'Công thức đã được xóa.', [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    if (navigation.canGoBack()) {
+                      navigation.goBack();
+                    } else {
+                      navigation.navigate('Home');
+                    }
+                  }
+                }
+              ]);
+            } catch (error: any) {
+              console.error('❌ Error deleting recipe:', error);
+              Alert.alert('Lỗi', error.message || 'Không thể xóa công thức.');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // --- Kiểm tra xem rating có phải của user hiện tại không ---
+  const isMyRating = (rating: RatingResponse): boolean => {
+    if (!currentUserEmail || !rating.userInteractionResponse?.email) {
+      return false;
+    }
+    return currentUserEmail.toLowerCase() === rating.userInteractionResponse.email.toLowerCase();
   };
 
   // --- Utilities ---
@@ -274,10 +378,21 @@ const ViewRecipeScreen: React.FC = () => {
                   <Text style={styles.headerTitle}>Chi tiết công thức</Text>
                   <Text style={styles.headerSubtitle}>Thông tin đầy đủ về món ăn</Text>
                 </View>
-                {!isOwner && (
+                {isOwner ? (
                   <TouchableOpacity 
                     style={styles.headerIconContainer}
-                    onPress={() => Alert.alert('Báo cáo', 'Chức năng báo cáo công thức đang được phát triển')}
+                    onPress={handleDeleteRecipe}
+                  >
+                    <Icon name="delete-outline" size={24} color="rgba(255,255,255,0.9)" />
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity 
+                    style={styles.headerIconContainer}
+                    onPress={() => {
+                      setReportTargetId(recipeId);
+                      setReportTargetType('recipe');
+                      setReportDialogVisible(true);
+                    }}
                   >
                     <Icon name="flag-outline" size={24} color="rgba(255,255,255,0.9)" />
                   </TouchableOpacity>
@@ -509,7 +624,7 @@ const ViewRecipeScreen: React.FC = () => {
                   </View>
                   <View style={styles.starContainer}>
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <TouchableOpacity key={star} onPress={() => setUserRating(star)}>
+                      <TouchableOpacity key={star} onPress={() => handleRatingChange(star)}>
                         <Icon
                           name={star <= userRating ? "star" : "star-outline"}
                           size={36}
@@ -518,14 +633,31 @@ const ViewRecipeScreen: React.FC = () => {
                       </TouchableOpacity>
                     ))}
                   </View>
-                  <TextInput
-                    style={styles.inputBox}
-                    placeholder="Món ăn này thế nào? Hãy chia sẻ cảm nhận của bạn..."
-                    multiline
-                    numberOfLines={4}
-                    value={reviewComment}
-                    onChangeText={setReviewComment}
-                  />
+                  
+                  {/* TextInput với Focus Effect */}
+                  <View style={[
+                    styles.inputWrapper,
+                    isCommentFocused && styles.inputFocused,
+                    !!commentError && styles.inputError
+                  ]}>
+                    <TextInput
+                      style={styles.inputBox}
+                      placeholder="Món ăn này thế nào? Hãy chia sẻ cảm nhận của bạn..."
+                      placeholderTextColor="#9CA3AF"
+                      multiline
+                      numberOfLines={4}
+                      value={reviewComment}
+                      onChangeText={handleCommentChange}
+                      onFocus={() => setIsCommentFocused(true)}
+                      onBlur={() => setIsCommentFocused(false)}
+                    />
+                  </View>
+                  
+                  {/* Error Message */}
+                  {commentError ? (
+                    <Text style={styles.errorText}>{commentError}</Text>
+                  ) : null}
+
                   <TouchableOpacity
                     style={styles.submitButton}
                     onPress={handleSendReview}
@@ -554,7 +686,6 @@ const ViewRecipeScreen: React.FC = () => {
                   reviews.map((item) => (
                     <View key={item.id} style={styles.reviewItem}>
                       <View style={styles.reviewHeader}>
-                        {/* Avatar User */}
                         {item.userInteractionResponse?.avatarUrl ? (
                           <Image 
                             source={{ uri: getImageUrl(item.userInteractionResponse.avatarUrl) }} 
@@ -585,9 +716,29 @@ const ViewRecipeScreen: React.FC = () => {
                             ))}
                           </View>
                         </View>
-                        <Text style={styles.reviewDate}>
-                          {item.createdAtUtc ? formatDate(item.createdAtUtc) : 'Không rõ'}
-                        </Text>
+                        
+                        <View style={styles.reviewActions}>
+                          <Text style={styles.reviewDate}>
+                            {item.createdAtUtc ? formatDate(item.createdAtUtc) : 'Không rõ'}
+                          </Text>
+                          
+                          {/* Icon xóa hoặc báo cáo */}
+                          {isMyRating(item) ? (
+                            <TouchableOpacity
+                              style={styles.actionIcon}
+                              onPress={() => handleDeleteRating(item.id)}
+                            >
+                              <Icon name="delete-outline" size={20} color="#EF4444" />
+                            </TouchableOpacity>
+                          ) : (
+                            <TouchableOpacity
+                              style={styles.actionIcon}
+                              onPress={() => handleReportRating(item.id)}
+                            >
+                              <Icon name="flag-outline" size={20} color="#F59E0B" />
+                            </TouchableOpacity>
+                          )}
+                        </View>
                       </View>
                       <Text style={styles.reviewText}>
                         {item.feedback || 'Không có nội dung'}
@@ -614,6 +765,18 @@ const ViewRecipeScreen: React.FC = () => {
           </View>
         )}
       </View>
+
+      {/* REPORT DIALOG */}
+      {/* <ReportDialog
+        visible={reportDialogVisible}
+        onClose={() => setReportDialogVisible(false)}
+        targetId={reportTargetId}
+        targetType={reportTargetType}
+        onReportSuccess={() => {
+          setReportDialogVisible(false);
+          Alert.alert('Thành công', 'Báo cáo của bạn đã được gửi.');
+        }}
+      /> */}
     </SafeAreaView>
   );
 };

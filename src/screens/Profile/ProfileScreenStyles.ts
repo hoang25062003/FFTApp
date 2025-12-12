@@ -2,17 +2,18 @@ import { StyleSheet, Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
 const BRAND_COLOR = '#8BC34A';
+const BG_COLOR = '#F8F9FA';
 
 export const localStyles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F9FA',
+        backgroundColor: BG_COLOR,
     },
     centerContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F8F9FA',
+        backgroundColor: BG_COLOR,
     },
     retryButton: {
         backgroundColor: BRAND_COLOR,
@@ -20,62 +21,115 @@ export const localStyles = StyleSheet.create({
         paddingVertical: 10,
         borderRadius: 8,
     },
+    
+    // --- Header Section (Redesigned) ---
     headerSection: {
-        marginBottom: 20,
+        marginBottom: 16,
     },
-    gradientBg: {
-        height: 180,
+    headerBackground: {
+        height: 160,
+        backgroundColor: BRAND_COLOR,
         borderBottomLeftRadius: 30,
         borderBottomRightRadius: 30,
+        position: 'relative',
         overflow: 'hidden',
+        justifyContent: 'center',
+        paddingBottom: 20,
     },
-    patternOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0,0,0,0.2)',
+    decorativeCircle1: {
+        position: 'absolute',
+        width: 200,
+        height: 200,
+        borderRadius: 100,
+        backgroundColor: 'rgba(255,255,255,0.1)',
+        top: -50,
+        right: -40,
+    },
+    decorativeCircle2: {
+        position: 'absolute',
+        width: 120,
+        height: 120,
+        borderRadius: 60,
+        backgroundColor: 'rgba(255,255,255,0.08)',
+        bottom: -20,
+        left: -20,
+    },
+    headerContent: {
+        paddingHorizontal: 24,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        zIndex: 1,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: '#FFFFFF',
+        letterSpacing: -0.5,
+    },
+    headerSubtitle: {
+        fontSize: 13,
+        color: 'rgba(255,255,255,0.9)',
+        marginTop: 4,
+        fontWeight: '500',
+    },
+    headerIconContainer: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     
-    profileHeader: {
-        marginTop: -80,
-        alignItems: 'center',
-        paddingHorizontal: 20,
+    // --- Profile Card (Replaces old header) ---
+    profileCard: {
+        backgroundColor: '#FFFFFF',
+        marginHorizontal: 16,
+        marginTop: -40,
+        borderRadius: 20,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
+        marginBottom: 16,
     },
+    
     avatarSection: {
+        alignItems: 'center',
         marginBottom: 16,
     },
     avatarWrapper: {
         position: 'relative',
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4.65,
-        elevation: 8,
     },
     avatarImage: {
-        width: 110,
-        height: 110,
-        borderRadius: 55,
-        borderWidth: 4,
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        borderWidth: 3,
         borderColor: '#FFFFFF',
         backgroundColor: '#FFF',
     },
     avatarPlaceholder: {
-        width: 110,
-        height: 110,
-        borderRadius: 55,
-        backgroundColor: '#ccc',
+        width: 90,
+        height: 90,
+        borderRadius: 45,
+        backgroundColor: '#E5E7EB',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 4,
+        borderWidth: 3,
         borderColor: '#FFFFFF',
     },
     editAvatarBadge: {
         position: 'absolute',
-        bottom: 2,
-        right: 2,
+        bottom: 0,
+        right: 0,
         backgroundColor: BRAND_COLOR,
-        width: 34,
-        height: 34,
-        borderRadius: 17,
+        width: 30,
+        height: 30,
+        borderRadius: 15,
         justifyContent: 'center',
         alignItems: 'center',
         borderWidth: 3,
@@ -87,7 +141,7 @@ export const localStyles = StyleSheet.create({
         marginBottom: 20,
     },
     profileName: {
-        fontSize: 24,
+        fontSize: 22,
         fontWeight: '800',
         color: '#1F2937',
         marginBottom: 6,
@@ -97,45 +151,45 @@ export const localStyles = StyleSheet.create({
         fontSize: 14,
         color: '#6B7280',
         textAlign: 'center',
-        paddingHorizontal: 30,
+        paddingHorizontal: 20,
         lineHeight: 20,
     },
     
+    // --- Stats Card ---
     statsCard: {
         flexDirection: 'row',
         backgroundColor: '#FFFFFF',
-        marginHorizontal: 20,
-        borderRadius: 20,
-        paddingVertical: 20,
+        borderRadius: 16,
+        paddingVertical: 16,
         paddingHorizontal: 10,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
         shadowRadius: 12,
         elevation: 5,
-        marginBottom: 16,
+        marginBottom: 30,
     },
     statItem: {
         flex: 1,
         alignItems: 'center',
     },
     statIconBg: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#F0F9FF',
         justifyContent: 'center',
         alignItems: 'center',
-        marginBottom: 8,
+        marginBottom: 6,
     },
     statValue: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: '700',
         color: '#1F2937',
-        marginBottom: 4,
+        marginBottom: 2,
     },
     statLabel: {
-        fontSize: 12,
+        fontSize: 11,
         color: '#6B7280',
         fontWeight: '500',
     },
@@ -145,84 +199,79 @@ export const localStyles = StyleSheet.create({
         marginHorizontal: 8,
     },
     
+    // --- Action Buttons ---
     actionButtonsContainer: {
         flexDirection: 'row',
-        paddingHorizontal: 20,
         gap: 10,
     },
     editButton: {
         flex: 1,
         flexDirection: 'row',
         backgroundColor: BRAND_COLOR,
-        paddingVertical: 14,
-        borderRadius: 14,
+        paddingVertical: 12,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
-        shadowColor: BRAND_COLOR,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 4,
+        gap: 6,
     },
     editButtonText: {
         color: '#FFFFFF',
         fontWeight: '700',
-        fontSize: 15,
+        fontSize: 14,
     },
     shareButton: {
         flex: 1,
         flexDirection: 'row',
         backgroundColor: '#FFFFFF',
-        paddingVertical: 14,
-        borderRadius: 14,
+        paddingVertical: 12,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 8,
-        borderWidth: 2,
+        gap: 6,
+        borderWidth: 1.5,
         borderColor: BRAND_COLOR,
     },
     shareButtonText: {
         color: BRAND_COLOR,
         fontWeight: '700',
-        fontSize: 15,
+        fontSize: 14,
     },
     logoutButton: {
-        width: 52,
-        height: 52,
-        borderRadius: 14,
+        width: 48,
+        height: 48,
+        borderRadius: 12,
         backgroundColor: '#FEF2F2',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: '#FEE2E2',
     },
-    // ✅ NEW: Report button style
     reportButton: {
-        width: 52,
-        height: 52,
-        borderRadius: 14,
+        width: 48,
+        height: 48,
+        borderRadius: 12,
         backgroundColor: '#FFFBEB',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
+        borderWidth: 1.5,
         borderColor: '#FEF3C7',
     },
     
+    // --- Content Section ---
     contentSection: {
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
     },
     
     infoCard: {
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
         padding: 20,
-        marginBottom: 20,
+        marginBottom: 16,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 3,
+        shadowRadius: 4,
+        elevation: 2,
     },
     cardHeader: {
         flexDirection: 'row',
@@ -239,18 +288,18 @@ export const localStyles = StyleSheet.create({
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 14,
+        paddingVertical: 12,
         borderBottomWidth: 1,
         borderBottomColor: '#F3F4F6',
     },
     infoIconContainer: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
         backgroundColor: '#F0F9FF',
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 14,
+        marginRight: 12,
     },
     infoContent: {
         flex: 1,
@@ -271,54 +320,18 @@ export const localStyles = StyleSheet.create({
         textAlign: 'right',
     },
     
-    // --- STYLE CHO PHẦN RECIPE & TABS MỚI ---
+    // --- Recipe Section ---
     recipeSection: {
         backgroundColor: '#FFFFFF',
         borderRadius: 20,
         padding: 20,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 3,
+        shadowRadius: 4,
+        elevation: 2,
     },
     
-    // Styles cho Tab Switcher
-    tabContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#F3F4F6', // Màu nền xám nhạt của thanh chứa
-        borderRadius: 25,           // Bo tròn 2 đầu (pill shape)
-        padding: 4,
-        marginBottom: 20,
-    },
-    tabButton: {
-        flex: 1,
-        flexDirection: 'row',
-        paddingVertical: 10,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    activeTabButton: {
-        backgroundColor: BRAND_COLOR,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        elevation: 3,
-    },
-    tabText: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    activeTabText: {
-        color: '#FFFFFF',
-    },
-    inactiveTabText: {
-        color: '#6B7280',
-    },
-    // ----------------------------------------
-
     recipeSectionHeader: {
         marginBottom: 16,
     },
@@ -346,15 +359,46 @@ export const localStyles = StyleSheet.create({
         fontWeight: '700',
     },
     
+    // --- Tab Container ---
+    tabContainer: {
+        flexDirection: 'row',
+        backgroundColor: '#F3F4F6',
+        borderRadius: 12,
+        padding: 4,
+        marginBottom: 16,
+    },
+    tabButton: {
+        flex: 1,
+        flexDirection: 'row',
+        paddingVertical: 10,
+        borderRadius: 10,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    activeTabButton: {
+        backgroundColor: BRAND_COLOR,
+    },
+    tabText: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    activeTabText: {
+        color: '#FFFFFF',
+    },
+    inactiveTabText: {
+        color: '#6B7280',
+    },
+    
+    // --- Search Bar ---
     searchBarContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#F9FAFB',
-        borderRadius: 14,
+        borderRadius: 12,
         paddingHorizontal: 14,
-        height: 50,
+        height: 48,
         marginBottom: 20,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: '#E5E7EB',
     },
     searchInput: {
@@ -376,25 +420,11 @@ export const localStyles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 50,
     },
-    emptyIconContainer: {
-        width: 120,
-        height: 120,
-        borderRadius: 60,
-        backgroundColor: '#F9FAFB',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 20,
-    },
     emptyStateTitle: {
-        fontSize: 18,
+        fontSize: 16,
         fontWeight: '700',
         color: '#1F2937',
-        marginBottom: 8,
-    },
-    emptyStateText: {
-        fontSize: 14,
-        color: '#9CA3AF',
-        textAlign: 'center',
+        marginTop: 12,
     },
 });
 

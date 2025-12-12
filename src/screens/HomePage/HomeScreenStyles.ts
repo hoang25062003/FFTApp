@@ -96,6 +96,34 @@ const styles = StyleSheet.create({
         fontWeight: '500',
     },
 
+    // ========== SELECTED INGREDIENTS CHIPS ==========
+    selectedIngredientsContainer: {
+        marginTop: 12,
+    },
+
+    chipsScrollContent: {
+        gap: 8,
+        paddingRight: 16,
+    },
+
+    selectedIngredientChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F0FDF4',
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 20,
+        gap: 6,
+        borderWidth: 1,
+        borderColor: BRAND_COLOR,
+    },
+
+    selectedIngredientText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: BRAND_COLOR,
+    },
+
     // ========== SECTION ==========
     section: {
         marginBottom: 24,
@@ -151,6 +179,22 @@ const styles = StyleSheet.create({
         elevation: 3,
         alignItems: 'center',
         marginBottom: 5,
+        position: 'relative',
+    },
+
+    // ✅ BADGE CHECKMARK CHO NGUYÊN LIỆU ĐƯỢC CHỌN
+    selectedBadge: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        zIndex: 10,
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 4,
     },
 
     recentCardImage: {

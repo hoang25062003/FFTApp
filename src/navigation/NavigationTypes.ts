@@ -1,4 +1,3 @@
-
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthRoutes } from './RouteNames'; 
 
@@ -9,7 +8,7 @@ export type AuthStackParamList = {
     [AuthRoutes.VerifyEmailOtp]: { email: string };
     [AuthRoutes.ForgotPassword]: undefined;
     [AuthRoutes.VerifyCode]: { email: string };
-    [AuthRoutes.NewPassword]: undefined;
+    [AuthRoutes.NewPassword]: { email: string; code: string ;token: string;};
 };
 
 // --- ROOT STACK PARAM LIST ---
@@ -18,7 +17,6 @@ export type RootStackParamList = {
     MainAppTabs: undefined;
     CreateRecipe: undefined;
     DietRestrictionFlow: undefined;
-    // ✅ THÊM 2 SCREEN MỚI
     ViewRecipeScreen: { recipeId: string };
     ProfileScreen: { username: string };
     ListFollowScreen: { initialTab?: 'Followers' | 'Following' };

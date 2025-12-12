@@ -1,10 +1,11 @@
 import { API_BASE_URL } from '@env';
 import { TokenManager, ApiException } from './AuthService';
-
+import { Share, Alert } from 'react-native';
 // ============================================
 // CONSTANTS
 // ============================================
 const BASE_URL = `${API_BASE_URL}/api`;
+const WEB_URL = `${API_BASE_URL}`;
 const REQUEST_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
@@ -728,7 +729,23 @@ export async function searchRecipes(params?: RecipeSearchParams): Promise<MyReci
   recipeCache.set(cacheKey, result);
   return result;
 }
+export async function shareRecipe(recipeId: string, recipeName?: string): Promise<void> {
+  if (!recipeId) throw new Error('Recipe ID is required');
 
+  const shareUrl = `${WEB_URL}/recipe/${recipeId}`;
+  
+  try {
+    await Share.share({
+      title: 'FitFood Tracker',
+      message: `Khám phá công thức "${recipeName || 'hấp dẫn'}" tại đây: ${shareUrl}`,
+      url: shareUrl, // Dành cho iOS
+    }, {
+      dialogTitle: 'Chia sẻ qua:', // Android
+    });
+  } catch (error: any) {
+    Alert.alert('Lỗi', 'Không thể chia sẻ: ' + error.message);
+  }
+}
 // ========== COPY RECIPE ==========
 
 export async function copyRecipe(
@@ -793,4 +810,5 @@ export default {
   
   // Cache
   clearRecipeCache,
+  shareRecipe,
 };

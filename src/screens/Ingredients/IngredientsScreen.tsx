@@ -276,13 +276,13 @@ const IngredientsScreen: React.FC = () => {
       </View>
 
       {/* Ingredient Detail Dialog */}
-      {selectedIngredient && (
+      {/* {selectedIngredient && (
         <IngredientDetailDialog
           visible={showDetailDialog}
           ingredient={selectedIngredient}
           onClose={() => setShowDetailDialog(false)}
         />
-      )}
+      )} */}
     </SafeAreaView>
   );
 };

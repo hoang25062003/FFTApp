@@ -74,11 +74,62 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // OTP Card
-  otpCard: {
+  // Progress Indicator
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 60,
+    marginTop: -40,
+    marginBottom: 20,
+  },
+  progressStep: {
+    alignItems: 'center',
+  },
+  progressCircleCompleted: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: BRAND_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressCircleActive: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: BRAND_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: BRAND_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  progressLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 8,
+  },
+  progressLineActive: {
+    flex: 1,
+    height: 2,
+    backgroundColor: BRAND_COLOR,
+    marginHorizontal: 8,
+  },
+  progressStepNumber: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
+  // Form Card
+  formCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    marginTop: -60,
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
@@ -103,64 +154,89 @@ export const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '500',
     textAlign: 'center',
-  },
-  emailText: {
-    fontSize: 15,
-    color: BRAND_COLOR,
-    fontWeight: '700',
-    marginTop: 4,
-    letterSpacing: 0.3,
+    lineHeight: 20,
   },
 
-  // OTP Input
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  // Input
+  inputContainer: {
     marginBottom: 20,
-    gap: 8,
   },
-  otpInput: {
-    flex: 1,
-    height: 56,
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  required: {
+    color: '#EF4444',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 2,
     borderColor: '#E5E7EB',
     borderRadius: 12,
+    paddingHorizontal: 16,
     backgroundColor: '#F9FAFB',
-    textAlign: 'center',
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
+    gap: 12,
   },
-  otpInputFilled: {
-    borderColor: BRAND_COLOR,
-    backgroundColor: '#FFFFFF',
-    shadowColor: BRAND_COLOR,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  otpInputError: {
+  inputWrapperError: {
     borderColor: '#EF4444',
     backgroundColor: '#FEF2F2',
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    fontSize: 15,
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  eyeButton: {
+    padding: 4,
   },
 
   // Error
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 20,
-    paddingHorizontal: 4,
+    gap: 4,
+    marginTop: 6,
   },
   errorText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#EF4444',
     fontWeight: '600',
   },
 
-  // Verify Button
-  verifyButton: {
+  // Requirements Card
+  requirementsCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  requirementsTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 12,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  requirementText: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+
+  // Reset Button
+  resetButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -175,55 +251,24 @@ export const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  verifyButtonText: {
+  resetButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
 
-  // Resend Section
-  resendContainer: {
+  // Back Button
+  backContainer: {
     alignItems: 'center',
-    marginBottom: 20,
   },
-  resendButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  resendText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: BRAND_COLOR,
-    letterSpacing: 0.3,
-  },
-  timerContainer: {
+  backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingVertical: 8,
   },
-  timerText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '600',
-  },
-
-  // Login Link
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loginText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  loginLink: {
+  backText: {
     fontSize: 14,
     fontWeight: '700',
     color: BRAND_COLOR,
@@ -233,12 +278,12 @@ export const styles = StyleSheet.create({
   // Info Card
   infoCard: {
     flexDirection: 'row',
-    backgroundColor: '#F0F9FF',
+    backgroundColor: '#ECFDF5',
     marginHorizontal: 20,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#BFDBFE',
+    borderColor: '#A7F3D0',
     gap: 12,
     marginTop: 20,
   },
@@ -308,6 +353,7 @@ export const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 12,
     letterSpacing: -0.5,
+    textAlign: 'center',
   },
   successMessage: {
     fontSize: 15,

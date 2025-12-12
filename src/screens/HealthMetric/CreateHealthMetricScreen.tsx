@@ -114,17 +114,17 @@ const CreateHealthMetricScreen = () => {
     const weightNum = parseFloat(weight);
     const heightNum = parseFloat(height);
 
-    if (isNaN(weightNum) || weightNum <= 0 || weightNum > 500) {
+    if (isNaN(weightNum) || weightNum <= 0 || weightNum > 300) {
       return { 
         isValid: false, 
-        message: 'Cân nặng không hợp lệ (0-500 kg).' 
+        message: 'Cân nặng không hợp lệ (0.1-300 kg).' 
       };
     }
 
-    if (isNaN(heightNum) || heightNum <= 0 || heightNum > 300) {
+    if (isNaN(heightNum) || heightNum <= 30 || heightNum > 250) {
       return { 
         isValid: false, 
-        message: 'Chiều cao không hợp lệ (0-300 cm).' 
+        message: 'Chiều cao không hợp lệ (30-250 cm).' 
       };
     }
 

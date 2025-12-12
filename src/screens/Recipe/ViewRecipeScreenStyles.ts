@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
 
   // ==========================
-  // 4. MAIN CONTENT (INFO, STEPS)
+  // 4. MAIN CONTENT
   // ==========================
   scrollContent: {
     paddingBottom: 40,
@@ -492,16 +492,46 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
 
-  inputBox: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    borderWidth: 1,
+  // ===== INPUT WRAPPER & FOCUS =====
+  inputWrapper: {
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    overflow: 'hidden',
+  },
+
+  inputFocused: {
+    borderColor: BRAND_COLOR,
+    backgroundColor: '#FFFFFF',
+    shadowColor: BRAND_COLOR,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  inputError: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+
+  inputBox: {
     padding: 12,
     fontSize: 15,
     color: '#1F2937',
     textAlignVertical: 'top',
     minHeight: 100,
+    fontWeight: '500',
+  },
+
+  // ===== ERROR TEXT =====
+  errorText: {
+    fontSize: 13,
+    color: '#EF4444',
+    marginTop: 6,
+    fontWeight: '600',
+    marginLeft: 4,
   },
 
   submitButton: {
@@ -542,7 +572,7 @@ const styles = StyleSheet.create({
 
   reviewHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginBottom: 12,
   },
 
@@ -578,6 +608,18 @@ const styles = StyleSheet.create({
     gap: 2,
   },
 
+  // ===== NEW: REVIEW ACTIONS =====
+  reviewActions: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+
+  actionIcon: {
+    padding: 4,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+  },
+
   reviewDate: {
     fontSize: 13,
     color: '#9CA3AF',
@@ -591,10 +633,8 @@ const styles = StyleSheet.create({
   },
 
   // ==========================
-  // 6. BOTTOM ACTIONS & NEW SAVE BUTTON
+  // 6. BOTTOM ACTIONS
   // ==========================
-  
-  // Container cho 2 nút nằm ngang
   actionButtonsContainer: {
     flexDirection: 'row',
     marginHorizontal: 16,
@@ -602,7 +642,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  // Nút Tạo bản sao (Bên trái)
   duplicateButton: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -627,7 +666,6 @@ const styles = StyleSheet.create({
     color: BRAND_COLOR,
   },
 
-  // Nút Lưu (Bên phải)
   saveButton: {
     flex: 1,
     backgroundColor: BRAND_COLOR,
@@ -660,7 +698,6 @@ const styles = StyleSheet.create({
     color: BRAND_COLOR,
   },
 
-  // Bottom Action (Chỉ dùng cho Owner Edit)
   bottomAction: {
     position: 'absolute',
     bottom: 0,

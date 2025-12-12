@@ -51,25 +51,84 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 20,
     zIndex: 1,
   },
-  appName: {
+  iconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  headerTitle: {
     fontSize: 32,
     fontWeight: '800',
     color: '#FFFFFF',
-    marginTop: 16,
     letterSpacing: -0.5,
   },
-  appTagline: {
+  headerSubtitle: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.9)',
     marginTop: 8,
     fontWeight: '500',
+    textAlign: 'center',
   },
 
-  // Login Card
-  loginCard: {
+  // Progress Indicator
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 60,
+    marginTop: -40,
+    marginBottom: 20,
+  },
+  progressStep: {
+    alignItems: 'center',
+  },
+  progressCircleActive: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: BRAND_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: BRAND_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  progressCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressCircleText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#9CA3AF',
+  },
+  progressLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 8,
+  },
+  progressStepNumber: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
+  // Form Card
+  formCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    marginTop: -60,
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
@@ -79,78 +138,74 @@ export const styles = StyleSheet.create({
     elevation: 8,
   },
   cardHeader: {
-    marginBottom: 24,
+    marginBottom: 28,
+    alignItems: 'center',
   },
   cardTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '800',
     color: '#1F2937',
     letterSpacing: -0.5,
+    marginBottom: 8,
   },
   cardSubtitle: {
     fontSize: 14,
     color: '#6B7280',
-    marginTop: 4,
     fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 
-  // Input Group
-  inputGroup: {
-    marginBottom: 20,
+  // Input
+  inputContainer: {
+    marginBottom: 24,
   },
-  label: {
+  inputLabel: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#374151',
+    fontWeight: '600',
+    color: '#1F2937',
     marginBottom: 8,
-    letterSpacing: 0.2,
+  },
+  required: {
+    color: '#EF4444',
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: '#E5E7EB',
     borderRadius: 12,
+    paddingHorizontal: 16,
     backgroundColor: '#F9FAFB',
-    paddingHorizontal: 14,
-    gap: 10,
+    gap: 12,
+  },
+  inputWrapperError: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
   },
   input: {
     flex: 1,
-    paddingVertical: 14,
+    height: 50,
     fontSize: 15,
     color: '#1F2937',
     fontWeight: '500',
   },
-  inputFocused: {
-    borderColor: BRAND_COLOR,
-    backgroundColor: '#FFFFFF',
-  },
-  inputError: {
-    borderColor: '#EF4444',
-    backgroundColor: '#FEF2F2',
+
+  // Error
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
   },
   errorText: {
     fontSize: 12,
     color: '#EF4444',
-    marginTop: 6,
-    fontWeight: '500',
-    marginLeft: 4,
-  },
-
-  // Forgot Password
-  forgotPasswordButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-  },
-  forgotPasswordText: {
-    fontSize: 14,
     fontWeight: '600',
-    color: BRAND_COLOR,
   },
 
-  // Login Button
-  loginButton: {
+  // Send Button
+  sendButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -158,78 +213,70 @@ export const styles = StyleSheet.create({
     backgroundColor: BRAND_COLOR,
     borderRadius: 12,
     paddingVertical: 16,
+    marginBottom: 20,
     shadowColor: BRAND_COLOR,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 5,
   },
-  loginButtonText: {
+  sendButtonText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
     letterSpacing: 0.5,
   },
 
-  // Divider
-  dividerContainer: {
+  // Back Button
+  loginContainer: {
+    alignItems: 'center',
+  },
+  backButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 24,
+    gap: 6,
+    paddingVertical: 8,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5E7EB',
-  },
-  dividerText: {
-    fontSize: 13,
-    color: '#9CA3AF',
-    fontWeight: '600',
-    marginHorizontal: 16,
-  },
-
-  // Google Button
-  googleButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: 12,
-    paddingVertical: 14,
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  googleButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#374151',
-    letterSpacing: 0.3,
-  },
-
-  // Register Container
-  registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  registerText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  registerLink: {
+  backText: {
     fontSize: 14,
     fontWeight: '700',
     color: BRAND_COLOR,
     letterSpacing: 0.3,
+  },
+
+  // Info Card
+  infoCard: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F9FF',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    gap: 12,
+    marginTop: 20,
+  },
+  infoIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  infoTextContainer: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 4,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
   },
 
   // Footer

@@ -74,11 +74,75 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
+  // Progress Indicator
+  progressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 60,
+    marginTop: -40,
+    marginBottom: 20,
+  },
+  progressStep: {
+    alignItems: 'center',
+  },
+  progressCircleCompleted: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: BRAND_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressCircleActive: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: BRAND_COLOR,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: BRAND_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  progressCircleActiveText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  progressCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  progressLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 8,
+  },
+  progressLineActive: {
+    flex: 1,
+    height: 2,
+    backgroundColor: BRAND_COLOR,
+    marginHorizontal: 8,
+  },
+  progressStepNumber: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#6B7280',
+    marginTop: 4,
+  },
+
   // OTP Card
   otpCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
-    marginTop: -60,
     borderRadius: 24,
     padding: 24,
     shadowColor: '#000',
@@ -212,18 +276,17 @@ export const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Login Link
-  loginContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+  // Change Email
+  changeEmailContainer: {
     alignItems: 'center',
   },
-  loginText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
+  changeEmailButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
   },
-  loginLink: {
+  changeEmailText: {
     fontSize: 14,
     fontWeight: '700',
     color: BRAND_COLOR,
@@ -277,65 +340,5 @@ export const styles = StyleSheet.create({
     fontSize: 13,
     color: '#9CA3AF',
     fontWeight: '500',
-  },
-
-  // Success Screen
-  successContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 32,
-  },
-  successIconContainer: {
-    marginBottom: 32,
-  },
-  successIconCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: BRAND_COLOR,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: BRAND_COLOR,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  successTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#1F2937',
-    marginBottom: 12,
-    letterSpacing: -0.5,
-  },
-  successMessage: {
-    fontSize: 15,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 22,
-    marginBottom: 32,
-    fontWeight: '500',
-  },
-  successButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: BRAND_COLOR,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    shadowColor: BRAND_COLOR,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  successButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    letterSpacing: 0.5,
   },
 });

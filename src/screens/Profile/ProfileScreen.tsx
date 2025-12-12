@@ -8,7 +8,6 @@ import {
     TextInput,
     ActivityIndicator,
     Alert,
-    ImageBackground,
     RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,8 +19,7 @@ import { API_BASE_URL } from '@env';
 import HeaderApp from '../../components/HeaderApp';
 import RecipeCard from '../../components/RecipeCard';
 import Pagination from '../../components/Pagination';
-// 👇 IMPORT MỚI: Đảm bảo đường dẫn đúng tới file ReportDialog bạn vừa tạo
-import ReportDialog from '../../components/ReportDialog'; 
+import ReportDialog from '../../components/ReportDialog';
 
 import UserService, { UserProfile, getGenderDisplay } from '../../services/UserService';
 import profileService, { PublicProfileDto } from '../../services/ProfileService';
@@ -59,7 +57,7 @@ interface InfoRowProps {
 const InfoRow: React.FC<InfoRowProps> = ({ iconName, label, value, isLink = false }) => (
     <View style={localStyles.infoRow}>
         <View style={localStyles.infoIconContainer}>
-            <MaterialIcon name={iconName} size={22} color={BRAND_COLOR} />
+            <MaterialIcon name={iconName} size={20} color={BRAND_COLOR} />
         </View>
         <View style={localStyles.infoContent}>
             <Text style={localStyles.infoLabel}>{label}</Text>
@@ -100,22 +98,19 @@ const ProfileScreen: React.FC = () => {
     const isOwnProfile = !username;
 
     const [userData, setUserData] = useState<UserProfile | PublicProfileDto>(initialUserData);
-    const [isLoading, setIsLoading] = useState(true); // Loading toàn trang
+    const [isLoading, setIsLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isFollowing, setIsFollowing] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
-
-    // 👇 STATE MỚI: Quản lý ẩn hiện dialog báo cáo
     const [isReportVisible, setReportVisible] = useState(false);
 
     const [recipes, setRecipes] = useState<Recipe[]>([]);
-    const [isLoadingRecipes, setIsLoadingRecipes] = useState(false); // Loading riêng cho list recipes
+    const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [totalRecipes, setTotalRecipes] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
-
     const [activeTab, setActiveTab] = useState<'my_recipes' | 'saved_recipes'>('my_recipes');
 
     const fetchUserProfile = useCallback(async () => {
@@ -137,7 +132,7 @@ const ProfileScreen: React.FC = () => {
     }, [isOwnProfile, username]);
 
     const fetchRecipes = useCallback(async () => {
-        setIsLoadingRecipes(true); // Chỉ bật loading ở danh sách
+        setIsLoadingRecipes(true);
         try {
             let response;
             if (isOwnProfile) {
@@ -202,30 +197,20 @@ const ProfileScreen: React.FC = () => {
         }
     };
 
-    // 👇 HÀM MỚI: Xử lý khi bấm nút Gửi báo cáo
     const handleSubmitReport = async (reason: string) => {
         try {
             console.log('Sending report for user:', userData.id, 'Reason:', reason);
-            
-            // TODO: Gọi API báo cáo thực tế ở đây
-            // await profileService.reportUser(userData.id, reason);
-
-            setReportVisible(false); // Đóng dialog trước
-            
-            // Hiện thông báo thành công sau
+            // TODO: await profileService.reportUser(userData.id, reason);
+            setReportVisible(false);
             setTimeout(() => {
-                 Alert.alert('Đã gửi', 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét sớm.');
+                Alert.alert('Đã gửi', 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét sớm.');
             }, 300);
-           
         } catch (error) {
             console.error(error);
             Alert.alert('Lỗi', 'Có lỗi xảy ra khi gửi báo cáo.');
         }
     };
 
-    // --- SỬA ĐỔI PHẦN USE EFFECT ---
-
-    // 1. Chỉ chạy khi mount hoặc đổi user: Load Profile (quản lý isLoading toàn trang)
     useEffect(() => {
         const loadProfile = async () => {
             setIsLoading(true);
@@ -235,25 +220,18 @@ const ProfileScreen: React.FC = () => {
         loadProfile();
     }, [fetchUserProfile]);
 
-    // 2. Chạy khi bộ lọc/trang thay đổi: Load Recipes (quản lý isLoadingRecipes)
-    // fetchRecipes đã có sẵn việc set isLoadingRecipes bên trong nó
     useEffect(() => {
         fetchRecipes();
     }, [fetchRecipes]);
 
-    // 3. Khi quay lại màn hình (Focus)
     useEffect(() => {
         if (isFocused) {
-            // Cập nhật lại thông tin user ngầm (không hiện loading)
-            fetchUserProfile(); 
+            fetchUserProfile();
         }
     }, [isFocused, fetchUserProfile]);
 
-    // --------------------------------
-
     const onRefresh = async () => {
         setRefreshing(true);
-        // Khi kéo để refresh thì load lại cả 2
         await Promise.all([fetchUserProfile(), fetchRecipes()]);
         setRefreshing(false);
     };
@@ -344,48 +322,60 @@ const ProfileScreen: React.FC = () => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND_COLOR]} />
                 }
             >
-                {/* Header & Avatar Section */}
+                {/* Header Section - New Design */}
                 <View style={localStyles.headerSection}>
-                    <ImageBackground
-                        source={require('../../assets/images/background.jpg')}
-                        style={localStyles.gradientBg}
-                        resizeMode="cover"
-                    >
-                        <View style={localStyles.patternOverlay} />
-                    </ImageBackground>
-
-                    <View style={localStyles.profileHeader}>
-                        <View style={localStyles.avatarSection}>
-                            <View style={localStyles.avatarWrapper}>
-                                {finalAvatarUrl ? (
-                                    <Image source={{ uri: finalAvatarUrl }} style={localStyles.avatarImage} />
-                                ) : (
-                                    <View style={localStyles.avatarPlaceholder}>
-                                        <MaterialIcon name="account" size={50} color="#FFFFFF" />
-                                    </View>
-                                )}
-                                {isOwnProfile && (
-                                    <TouchableOpacity style={localStyles.editAvatarBadge} onPress={handleEditProfile}>
-                                        <MaterialIcon name="camera" size={16} color="#fff" />
-                                    </TouchableOpacity>
-                                )}
+                    <View style={localStyles.headerBackground}>
+                        <View style={localStyles.decorativeCircle1} />
+                        <View style={localStyles.decorativeCircle2} />
+                        <View style={localStyles.headerContent}>
+                            <View>
+                                <Text style={localStyles.headerTitle}>
+                                    {isOwnProfile ? 'Hồ Sơ Của Tôi' : 'Trang Cá Nhân'}
+                                </Text>
+                                <Text style={localStyles.headerSubtitle}>
+                                    {isOwnProfile ? 'Quản lý thông tin cá nhân' : `Thông tin của ${userData.firstName}`}
+                                </Text>
+                            </View>
+                            <View style={localStyles.headerIconContainer}>
+                                <MaterialIcon name="account-circle" size={28} color="rgba(255,255,255,0.8)" />
                             </View>
                         </View>
-                        <View style={localStyles.profileInfo}>
-                            <Text style={localStyles.profileName}>{fullName}</Text>
-                            <Text style={localStyles.profileBio}>{bioDisplay}</Text>
+                    </View>
+                </View>
+
+                {/* Profile Card */}
+                <View style={localStyles.profileCard}>
+                    {/* Avatar & Info */}
+                    <View style={localStyles.avatarSection}>
+                        <View style={localStyles.avatarWrapper}>
+                            {finalAvatarUrl ? (
+                                <Image source={{ uri: finalAvatarUrl }} style={localStyles.avatarImage} />
+                            ) : (
+                                <View style={localStyles.avatarPlaceholder}>
+                                    <MaterialIcon name="account" size={40} color="#9CA3AF" />
+                                </View>
+                            )}
+                            {isOwnProfile && (
+                                <TouchableOpacity style={localStyles.editAvatarBadge} onPress={handleEditProfile}>
+                                    <MaterialIcon name="camera" size={14} color="#fff" />
+                                </TouchableOpacity>
+                            )}
                         </View>
+                    </View>
+
+                    <View style={localStyles.profileInfo}>
+                        <Text style={localStyles.profileName}>{fullName}</Text>
+                        <Text style={localStyles.profileBio}>{bioDisplay}</Text>
                     </View>
 
                     {/* Stats Card */}
                     <View style={localStyles.statsCard}>
-                        {/* Tab: Followers */}
                         <TouchableOpacity
                             style={localStyles.statItem}
                             onPress={() => navigation.navigate('ListFollowScreen', { initialTab: 'Followers' })}
                         >
                             <View style={localStyles.statIconBg}>
-                                <MaterialIcon name="account-multiple" size={20} color={BRAND_COLOR} />
+                                <MaterialIcon name="account-multiple" size={18} color={BRAND_COLOR} />
                             </View>
                             <Text style={localStyles.statValue}>{userData.followersCount}</Text>
                             <Text style={localStyles.statLabel}>Người theo dõi</Text>
@@ -393,13 +383,12 @@ const ProfileScreen: React.FC = () => {
 
                         <View style={localStyles.statDivider} />
 
-                        {/* Tab: Following */}
                         <TouchableOpacity
                             style={localStyles.statItem}
                             onPress={() => navigation.navigate('ListFollowScreen', { initialTab: 'Following' })}
                         >
                             <View style={localStyles.statIconBg}>
-                                <MaterialIcon name="account-heart" size={20} color={BRAND_COLOR} />
+                                <MaterialIcon name="account-heart" size={18} color={BRAND_COLOR} />
                             </View>
                             <Text style={localStyles.statValue}>{userData.followingCount}</Text>
                             <Text style={localStyles.statLabel}>Đang theo dõi</Text>
@@ -407,10 +396,9 @@ const ProfileScreen: React.FC = () => {
 
                         <View style={localStyles.statDivider} />
 
-                        {/* Star Rating */}
                         <View style={localStyles.statItem}>
                             <View style={localStyles.statIconBg}>
-                                <MaterialIcon name="star" size={20} color="#FFB800" />
+                                <MaterialIcon name="star" size={18} color="#FFB800" />
                             </View>
                             <Text style={localStyles.statValue}>4.5</Text>
                             <Text style={localStyles.statLabel}>Đánh giá</Text>
@@ -422,15 +410,15 @@ const ProfileScreen: React.FC = () => {
                         {isOwnProfile ? (
                             <>
                                 <TouchableOpacity style={localStyles.editButton} onPress={handleEditProfile}>
-                                    <MaterialIcon name="pencil" size={20} color="#FFFFFF" />
+                                    <MaterialIcon name="pencil" size={18} color="#FFFFFF" />
                                     <Text style={localStyles.editButtonText}>Chỉnh sửa</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={localStyles.shareButton}>
-                                    <MaterialIcon name="share-variant" size={20} color={BRAND_COLOR} />
+                                    <MaterialIcon name="share-variant" size={18} color={BRAND_COLOR} />
                                     <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity style={localStyles.logoutButton} onPress={handleLogout}>
-                                    <MaterialIcon name="logout" size={20} color="#FF5252" />
+                                    <MaterialIcon name="logout" size={18} color="#FF5252" />
                                 </TouchableOpacity>
                             </>
                         ) : (
@@ -446,7 +434,7 @@ const ProfileScreen: React.FC = () => {
                                         <>
                                             <MaterialIcon
                                                 name={isFollowing ? "account-check" : "account-plus"}
-                                                size={20}
+                                                size={18}
                                                 color={isFollowing ? BRAND_COLOR : "#FFFFFF"}
                                             />
                                             <Text style={[localStyles.editButtonText, isFollowing && { color: BRAND_COLOR }]}>
@@ -456,12 +444,11 @@ const ProfileScreen: React.FC = () => {
                                     )}
                                 </TouchableOpacity>
                                 <TouchableOpacity style={localStyles.shareButton}>
-                                    <MaterialIcon name="share-variant" size={20} color={BRAND_COLOR} />
+                                    <MaterialIcon name="share-variant" size={18} color={BRAND_COLOR} />
                                     <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
                                 </TouchableOpacity>
-                                {/* 👇 NÚT BÁO CÁO: ĐÃ CẬP NHẬT EVENT ONPRESS */}
                                 <TouchableOpacity style={localStyles.reportButton} onPress={() => setReportVisible(true)}>
-                                    <MaterialIcon name="flag" size={20} color="#F59E0B" />
+                                    <MaterialIcon name="flag" size={18} color="#F59E0B" />
                                 </TouchableOpacity>
                             </>
                         )}
@@ -470,9 +457,10 @@ const ProfileScreen: React.FC = () => {
 
                 {/* Content Section */}
                 <View style={localStyles.contentSection}>
+                    {/* Info Card */}
                     <View style={localStyles.infoCard}>
                         <View style={localStyles.cardHeader}>
-                            <MaterialIcon name="information" size={24} color={BRAND_COLOR} />
+                            <MaterialIcon name="information" size={22} color={BRAND_COLOR} />
                             <Text style={localStyles.cardTitle}>Thông tin cá nhân</Text>
                         </View>
                         <InfoRow iconName="calendar" label="Ngày sinh" value={birthDateDisplay} />
@@ -481,10 +469,11 @@ const ProfileScreen: React.FC = () => {
                         <InfoRow iconName="map-marker" label="Địa chỉ" value={addressDisplay} />
                     </View>
 
+                    {/* Recipe Section */}
                     <View style={localStyles.recipeSection}>
                         <View style={localStyles.recipeSectionHeader}>
                             <View style={localStyles.recipeTitleContainer}>
-                                <MaterialIcon name="book-open-variant" size={24} color={BRAND_COLOR} />
+                                <MaterialIcon name="book-open-variant" size={22} color={BRAND_COLOR} />
                                 <Text style={localStyles.recipeSectionTitle}>
                                     {isOwnProfile ? 'Danh sách công thức' : 'Công thức của ' + userData.firstName}
                                 </Text>
@@ -500,21 +489,21 @@ const ProfileScreen: React.FC = () => {
                                     style={[localStyles.tabButton, activeTab === 'my_recipes' && localStyles.activeTabButton]}
                                     onPress={() => handleTabChange('my_recipes')}
                                 >
-                                    <MaterialIcon name="chef-hat" size={20} color={activeTab === 'my_recipes' ? '#FFF' : '#6B7280'} style={{ marginRight: 6 }} />
+                                    <MaterialIcon name="chef-hat" size={18} color={activeTab === 'my_recipes' ? '#FFF' : '#6B7280'} style={{ marginRight: 6 }} />
                                     <Text style={[localStyles.tabText, activeTab === 'my_recipes' ? localStyles.activeTabText : localStyles.inactiveTabText]}>Của tôi</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[localStyles.tabButton, activeTab === 'saved_recipes' && localStyles.activeTabButton]}
                                     onPress={() => handleTabChange('saved_recipes')}
                                 >
-                                    <MaterialIcon name="bookmark" size={20} color={activeTab === 'saved_recipes' ? '#FFF' : '#6B7280'} style={{ marginRight: 6 }} />
+                                    <MaterialIcon name="bookmark" size={18} color={activeTab === 'saved_recipes' ? '#FFF' : '#6B7280'} style={{ marginRight: 6 }} />
                                     <Text style={[localStyles.tabText, activeTab === 'saved_recipes' ? localStyles.activeTabText : localStyles.inactiveTabText]}>Đã lưu</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
 
                         <View style={localStyles.searchBarContainer}>
-                            <Ionicons name="search" size={20} color="#9CA3AF" />
+                            <Ionicons name="search" size={18} color="#9CA3AF" />
                             <TextInput
                                 placeholder={isOwnProfile ? (activeTab === 'my_recipes' ? "Tìm của tôi..." : "Tìm đã lưu...") : "Tìm kiếm..."}
                                 style={localStyles.searchInput}
@@ -524,17 +513,16 @@ const ProfileScreen: React.FC = () => {
                             />
                             {searchQuery.length > 0 && (
                                 <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                    <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+                                    <Ionicons name="close-circle" size={18} color="#9CA3AF" />
                                 </TouchableOpacity>
                             )}
                         </View>
 
-                        {/* Đây là nơi hiển thị Loading chỉ cho phần danh sách */}
                         {isLoadingRecipes ? (
                             <ActivityIndicator size="small" color={BRAND_COLOR} style={{ marginVertical: 30 }} />
                         ) : recipes.length === 0 ? (
                             <View style={localStyles.emptyState}>
-                                <MaterialIcon name="chef-hat" size={60} color="#E5E7EB" />
+                                <MaterialIcon name="chef-hat" size={50} color="#E5E7EB" />
                                 <Text style={localStyles.emptyStateTitle}>Không tìm thấy công thức</Text>
                             </View>
                         ) : (
@@ -571,7 +559,6 @@ const ProfileScreen: React.FC = () => {
                 </View>
             </ScrollView>
 
-            {/* 👇 REPORT DIALOG COMPONENT: Đặt ở đây để phủ lên toàn bộ màn hình khi hiện */}
             <ReportDialog
                 visible={isReportVisible}
                 reportedUser={fullName}

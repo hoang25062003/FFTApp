@@ -1,17 +1,17 @@
-// FILE: src/services/AuthService.ts (Đã cập nhật)
+// FILE: src/services/AuthService.ts (Đã cập nhật đầy đủ)
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_BASE_URL } from '@env';
+import { jwtDecode } from 'jwt-decode';
 
 // ============================================
 // CONSTANTS
 // ============================================
 const BASE_URL = `${API_BASE_URL}/api`;
-// ⭐ ĐÃ SỬA: Đồng bộ hóa tên token cho RootNavigator
-const TOKEN_KEY = 'userToken'; // Tên token này PHẢI khớp với RootNavigator
+const TOKEN_KEY = 'userToken';
 const REFRESH_TOKEN_KEY = '@refresh_token';
 const USER_DATA_KEY = '@user_data';
-const REQUEST_TIMEOUT = 3000; 
+const REQUEST_TIMEOUT = 3000;
 
 // ============================================
 // TYPES
@@ -44,9 +44,7 @@ export type RegisterPayload = {
     email: string;
     password: string;
     rePassword: string;
-    // ⭐ ĐÃ BỎ: phoneNumber
     dateOfBirth: string; // yyyy-MM-dd
-    // ⭐ ĐÃ SỬA: Bỏ 'Other'
     gender: 'Male' | 'Female';
 };
 
@@ -61,12 +59,50 @@ export type OtpVerifyPayload = {
 
 export type ResendOtpPayload = { 
     email: string;
+    purpose?: 'VERIFYACCOUNTEMAIL' | 'FORGOTPASSWORD' | 'confirm' | 'reset';
+};
+
+export type ForgotPasswordPayload = {
+    email: string;
+};
+
+export type ResetPasswordWithOtpPayload = {
+    email: string;
+    token: string;
+    newPassword: string;
+    rePassword: string;
+};
+
+export type ChangePasswordPayload = {
+    currentPassword: string;
+    newPassword: string;
+    rePassword: string;
 };
 
 export type RefreshTokenResponse = {
     token: string;
     refreshToken?: string;
 };
+
+export enum Role {
+    CUSTOMER = 'Customer',
+    MODERATOR = 'Moderator',
+    ADMIN = 'Admin',
+}
+
+export interface User {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    fullName?: string;
+    phoneNumber?: string;
+    role: Role;
+    isActive: boolean;
+    isEmailVerified: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
 
 // Custom Error Class
 export class ApiException extends Error {
@@ -127,7 +163,7 @@ export const TokenManager = {
         }
     },
 
-    async saveUserData(userData: Partial<LoginResponse>): Promise<void> {
+    async saveUserData(userData: Partial<User>): Promise<void> {
         try {
             await AsyncStorage.setItem(USER_DATA_KEY, JSON.stringify(userData));
         } catch (error) {
@@ -135,7 +171,7 @@ export const TokenManager = {
         }
     },
 
-    async getUserData(): Promise<Partial<LoginResponse> | null> {
+    async getUserData(): Promise<Partial<User> | null> {
         try {
             const data = await AsyncStorage.getItem(USER_DATA_KEY);
             return data ? JSON.parse(data) : null;
@@ -194,18 +230,15 @@ class HttpClient {
     ): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`;
         
-        // Prepare headers - Use Record type for flexibility
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
         };
 
-        // Merge with custom headers from options
         if (options.headers) {
             const customHeaders = options.headers as Record<string, string>;
             Object.assign(headers, customHeaders);
         }
 
-        // Add auth token if required
         if (includeAuth) {
             const token = await TokenManager.getToken();
             if (token) {
@@ -222,7 +255,6 @@ class HttpClient {
             const responseData = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                // Handle token expiration
                 if (response.status === 401 && !isRetry && includeAuth) {
                     const refreshed = await this.refreshToken();
                     if (refreshed) {
@@ -250,7 +282,6 @@ class HttpClient {
         const errorData = responseData as ApiError;
         let errorMessage = errorData.message || `Lỗi ${response.status}: ${response.statusText}`;
         
-        // Handle validation errors
         if (errorData.errors) {
             const details = Object.entries(errorData.errors)
                 .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
@@ -298,13 +329,91 @@ class HttpClient {
 const httpClient = new HttpClient(BASE_URL);
 
 // ============================================
+// HELPER: EXTRACT USER FROM JWT
+// ============================================
+function extractUserFromToken(token: string, email?: string): User {
+    const decodedToken = jwtDecode<Record<string, any>>(token);
+
+    // Helper to extract claims with multiple possible keys
+    const extractClaim = (
+        token: Record<string, unknown>,
+        ...possibleKeys: string[]
+    ): string | undefined => {
+        for (const key of possibleKeys) {
+            const value = token[key];
+            if (value !== undefined && value !== null && value !== '') {
+                return String(value);
+            }
+        }
+        return undefined;
+    };
+
+    const rawRole = extractClaim(
+        decodedToken,
+        'http://schemas.microsoft.com/ws/2008/06/identity/claims/role',
+        'role',
+        'roles',
+        'user_role',
+        'authority',
+    );
+
+    // Map different role formats to our enum values
+    const roleMapping: Record<string, string> = {
+        ADMIN: 'Admin',
+        Admin: 'Admin',
+        admin: 'Admin',
+        MODERATOR: 'Moderator',
+        Moderator: 'Moderator',
+        moderator: 'Moderator',
+        CUSTOMER: 'Customer',
+        Customer: 'Customer',
+        customer: 'Customer',
+    };
+
+    const mappedRole = rawRole ? roleMapping[rawRole] || rawRole : 'Customer';
+
+    const user: User = {
+        id: extractClaim(
+            decodedToken,
+            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier',
+            'sub',
+            'id',
+            'userId',
+            'user_id',
+            'nameid',
+            'unique_name',
+        ) || email || 'unknown',
+        email: extractClaim(
+            decodedToken,
+            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name',
+            'email',
+            'email_address',
+            'mail',
+        ) || email || '',
+        role: mappedRole as Role,
+        firstName: extractClaim(decodedToken, 'firstName', 'first_name', 'given_name', 'fname'),
+        lastName: extractClaim(decodedToken, 'lastName', 'last_name', 'family_name', 'lname'),
+        fullName: extractClaim(decodedToken, 'fullName', 'full_name', 'name', 'display_name'),
+        phoneNumber: extractClaim(decodedToken, 'phoneNumber', 'phone_number', 'phone', 'mobile'),
+        isActive: true,
+        isEmailVerified: Boolean(
+            extractClaim(decodedToken, 'emailVerified', 'email_verified', 'verified')
+        ) || false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+
+    return user;
+}
+
+// ============================================
 // AUTH SERVICE METHODS
 // ============================================
 
 /**
  * Login user
  */
-export async function login(data: LoginPayload): Promise<LoginResponse> {
+export async function login(data: LoginPayload): Promise<LoginResponse & { user: User }> {
     const response = await httpClient.request<LoginResponse>(
         '/Auth/login',
         {
@@ -314,22 +423,49 @@ export async function login(data: LoginPayload): Promise<LoginResponse> {
         false
     );
 
+    // Extract user info from token
+    const user = extractUserFromToken(response.token, data.email);
+
     // Save tokens and user data
     await TokenManager.saveToken(response.token);
     if (response.refreshToken) {
         await TokenManager.saveRefreshToken(response.refreshToken);
     }
-    await TokenManager.saveUserData(response);
+    await TokenManager.saveUserData(user);
 
-    return response;
+    return { ...response, user };
 }
 
 /**
- * Register new user
+ * Register new user - Sử dụng query parameters
  */
 export async function register(data: RegisterPayload): Promise<RegisterResponse> {
+    // Build query string với key names đúng theo API (PascalCase)
+    const params = new URLSearchParams({
+        FirstName: data.firstName,
+        LastName: data.lastName,
+        Email: data.email,
+        Password: data.password,
+        RePassword: data.rePassword,
+        DateOfBirth: data.dateOfBirth, // yyyy-MM-dd format
+        Gender: data.gender,
+    });
+
     return httpClient.request<RegisterResponse>(
-        '/Auth/register',
+        `/Auth/register?${params.toString()}`,
+        {
+            method: 'POST',
+        },
+        false
+    );
+}
+
+/**
+ * Verify email OTP
+ */
+export async function verifyEmailOtp(data: OtpVerifyPayload): Promise<{ token: string }> {
+    return httpClient.request<{ token: string }>(
+        '/Auth/verify-email-otp',
         {
             method: 'POST',
             body: JSON.stringify(data),
@@ -339,11 +475,14 @@ export async function register(data: RegisterPayload): Promise<RegisterResponse>
 }
 
 /**
- * Verify email OTP
+ * Verify email OTP for password reset
  */
-export async function verifyEmailOtp(data: OtpVerifyPayload): Promise<void> {
-    await httpClient.request<void>(
-        '/Auth/verify-email-otp',
+export async function verifyEmailOtpForReset(
+    data: OtpVerifyPayload,
+    purpose: string = 'confirm'
+): Promise<{ token: string }> {
+    return httpClient.request<{ token: string }>(
+        `/Auth/verify-otp-for-password-reset?purpose=${purpose}`,
         {
             method: 'POST',
             body: JSON.stringify(data),
@@ -356,14 +495,83 @@ export async function verifyEmailOtp(data: OtpVerifyPayload): Promise<void> {
  * Resend OTP code
  */
 export async function resendOtp(data: ResendOtpPayload): Promise<void> {
+    const purpose = data.purpose || 'VERIFYACCOUNTEMAIL';
     await httpClient.request<void>(
-        '/Auth/resend-otp',
+        `/Auth/resend-otp?purpose=${purpose}`,
+        {
+            method: 'POST',
+            body: JSON.stringify({ email: data.email }),
+        },
+        false
+    );
+}
+
+/**
+ * Forgot password - send OTP to email
+ */
+export async function forgotPassword(data: ForgotPasswordPayload): Promise<void> {
+    await httpClient.request<void>(
+        '/Auth/forgot-password',
         {
             method: 'POST',
             body: JSON.stringify(data),
         },
         false
     );
+}
+
+/**
+ * Reset password with OTP
+ */
+export async function resetPasswordWithOtp(data: ResetPasswordWithOtpPayload): Promise<void> {
+    await httpClient.request<void>(
+        '/Auth/reset-password',
+        {
+            method: 'POST',
+            body: JSON.stringify(data),
+        },
+        false
+    );
+}
+
+/**
+ * Change password (authenticated user)
+ */
+export async function changePassword(data: ChangePasswordPayload): Promise<void> {
+    await httpClient.request<void>(
+        '/Auth/change-password',
+        {
+            method: 'POST',
+            body: JSON.stringify(data),
+        },
+        true // Requires authentication
+    );
+}
+
+/**
+ * Login with Google ID Token
+ */
+export async function loginWithGoogleIdToken(idToken: string): Promise<LoginResponse & { user: User }> {
+    const response = await httpClient.request<{ token: string }>(
+        '/Auth/google/id-token',
+        {
+            method: 'POST',
+            body: JSON.stringify({ idToken }),
+        },
+        false
+    );
+
+    // Extract user info from token
+    const user = extractUserFromToken(response.token);
+
+    // Save tokens and user data
+    await TokenManager.saveToken(response.token);
+    await TokenManager.saveUserData(user);
+
+    return { 
+        token: response.token,
+        user 
+    };
 }
 
 /**
@@ -397,14 +605,14 @@ export async function isAuthenticated(): Promise<boolean> {
 /**
  * Get current user data
  */
-export async function getCurrentUser(): Promise<Partial<LoginResponse> | null> {
+export async function getCurrentUser(): Promise<Partial<User> | null> {
     return TokenManager.getUserData();
 }
 
 /**
  * Update user profile (example protected route)
  */
-export async function updateProfile(data: Partial<LoginResponse>): Promise<void> {
+export async function updateProfile(data: Partial<User>): Promise<void> {
     await httpClient.request<void>(
         '/User/profile',
         {
@@ -424,7 +632,12 @@ export default {
     login,
     register,
     verifyEmailOtp,
+    verifyEmailOtpForReset,
     resendOtp,
+    forgotPassword,
+    resetPasswordWithOtp,
+    changePassword,
+    loginWithGoogleIdToken,
     logout,
     isAuthenticated,
     getCurrentUser,

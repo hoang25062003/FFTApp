@@ -1,132 +1,261 @@
-// FILE: src/screens/Register/RegisterScreenStyles.ts
-
 import { StyleSheet } from 'react-native';
-// GIẢ ĐỊNH: Màu sắc
-const Colors = {
-    background: '#fff',
-    textPrimary: '#333',
-    textSecondary: '#666',
-    primary: '#8BC34A', // Màu xanh olive/lime từ hình ảnh
-    border: '#ddd',
-    link: '#8BC34A', // Màu link cũng là màu primary
-}; 
-const FontSize = {
-    large: 24,
-    medium: 16,
-    small: 14,
-};
 
-const styles = StyleSheet.create({
-    screenContainer: {
-        flex: 1,
-        backgroundColor: Colors.background,
-    },
-    contentContainer: {
-        paddingHorizontal: 25,
-        paddingTop: 0, // Bỏ padding top vì HeaderLogo đã có
-        paddingBottom: 50,
-        minHeight: '100%',
-    },
-    // Tiêu đề lớn (Đăng ký)
-    title: {
-        fontSize: FontSize.large, 
-        color: Colors.textPrimary, 
-        fontWeight: 'bold',
-        marginBottom: 8, 
-        textAlign: 'left', // Theo hình ảnh, tiêu đề căn trái
-    },
-    // Tiêu đề phụ (Bắt đầu hành trình...)
-    subtitle: {
-        fontSize: FontSize.medium,
-        color: Colors.textSecondary,
-        marginBottom: 30, // Khoảng cách lớn hơn sau subtitle
-        textAlign: 'left',
-    },
-    formContainer: {
-        width: '100%',
-    },
-    label: {
-        fontSize: FontSize.small,
-        color: Colors.textSecondary,
-        marginTop: 15, // Khoảng cách giữa các nhóm input
-        marginBottom: 5,
-        fontWeight: '600',
-    },
-    // Dành cho Họ & Tên
-    nameRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 5, // Dùng margin top/bottom trong label/input
-    },
-    inputHalf: {
-        width: '48%', 
-    },
+const BRAND_COLOR = '#8BC34A';
+const BG_COLOR = '#F8F9FA';
 
-    // --- Date Input (Mô phỏng Date Picker) ---
-    dateInput: {
-        // Có thể cần style riêng cho CustomInput nếu nó là TouchableOpacity
-    },
-    inputIcon: {
-        color: Colors.textSecondary,
-    },
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: BG_COLOR,
+  },
 
-    // --- Gender Radio Buttons ---
-    genderRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: 10,
-        marginBottom: 10,
-    },
-    radioButtonContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginRight: 20,
-    },
-    radioCircle: {
-        height: 20,
-        width: 20,
-        borderRadius: 10,
-        borderWidth: 2,
-        borderColor: Colors.border,
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 8,
-    },
-    radioSelected: {
-        borderColor: Colors.primary,
-    },
-    radioInnerCircle: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: Colors.primary,
-    },
-    radioLabel: {
-        fontSize: FontSize.medium,
-        color: Colors.textPrimary,
-    },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
+  },
 
-    // --- Buttons & Links ---
-    registerButton: {
-        marginTop: 30,
-        marginBottom: 5,
-        backgroundColor: Colors.primary, // Đặt màu primary cho nút
-    },
-    loginLinkContainer: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: 20,
-    },
-    loginText: {
-        fontSize: FontSize.small,
-        color: Colors.textSecondary,
-    },
-    loginButtonLink: {
-        // Đặt màu link theo màu primary
-        color: Colors.link,
-        paddingHorizontal: 0, // Bỏ padding mặc định của nút link
-    }
+  // Header Section
+  headerSection: {
+    marginBottom: 20,
+  },
+  headerBackground: {
+    height: 280,
+    backgroundColor: BRAND_COLOR,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
+    position: 'relative',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  decorativeCircle1: {
+    position: 'absolute',
+    width: 250,
+    height: 250,
+    borderRadius: 125,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    top: -80,
+    right: -60,
+  },
+  decorativeCircle2: {
+    position: 'absolute',
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    bottom: -40,
+    left: -40,
+  },
+  headerContent: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    zIndex: 1,
+  },
+  appName: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginTop: 16,
+    letterSpacing: -0.5,
+  },
+  appTagline: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+
+  // Register Card
+  registerCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginTop: -60,
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+    marginBottom: 20,
+  },
+  cardHeader: {
+    marginBottom: 24,
+  },
+  cardTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1F2937',
+    letterSpacing: -0.5,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+
+  // Row for name inputs
+  row: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+  halfInput: {
+    flex: 1,
+  },
+
+  // Input Group
+  inputGroup: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
+    marginBottom: 8,
+    letterSpacing: 0.2,
+  },
+  required: {
+    color: '#EF4444',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  input: {
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#1F2937',
+    fontWeight: '500',
+  },
+  inputFocused: {
+    borderColor: BRAND_COLOR,
+    backgroundColor: '#FFFFFF',
+  },
+  inputError: {
+    borderColor: '#EF4444',
+    backgroundColor: '#FEF2F2',
+  },
+  errorText: {
+    fontSize: 12,
+    color: '#EF4444',
+    marginTop: 6,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+  hintText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 6,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+
+  // Gender Buttons
+  genderContainer: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  genderButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    paddingVertical: 14,
+    backgroundColor: '#F9FAFB',
+  },
+  genderButtonActive: {
+    backgroundColor: BRAND_COLOR,
+    borderColor: BRAND_COLOR,
+    shadowColor: BRAND_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  genderButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#6B7280',
+    letterSpacing: 0.3,
+  },
+  genderButtonTextActive: {
+    color: '#FFFFFF',
+  },
+
+  // Register Button
+  registerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: BRAND_COLOR,
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginTop: 8,
+    shadowColor: BRAND_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  registerButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
+  },
+
+  // Login Link
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  loginText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  loginLink: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: BRAND_COLOR,
+    letterSpacing: 0.3,
+  },
+
+  // Info Card
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#EFF6FF',
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    gap: 12,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 13,
+    color: '#1F2937',
+    lineHeight: 18,
+    fontWeight: '500',
+  },
 });
-
-export default styles;

@@ -23,8 +23,11 @@ const HomeScreen: React.FC = () => {
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [dishes, setDishes] = useState<MyRecipe[]>([]);
     const [savedRecipeIds, setSavedRecipeIds] = useState<Set<string>>(new Set());
+    
+    // ✅ THAY ĐỔI: Cho phép chọn nhiều nguyên liệu
+    const [selectedIngredients, setSelectedIngredients] = useState<Map<string, string>>(new Map());
 
-    const isSearching = searchQuery.trim().length > 0;
+    const isSearching = searchQuery.trim().length > 0 || selectedIngredients.size > 0;
 
     const loadSavedRecipeIds = async () => {
         try {
@@ -69,7 +72,7 @@ const HomeScreen: React.FC = () => {
     };
 
     const handleSearch = async () => {
-        if (!searchQuery.trim()) {
+        if (!searchQuery.trim() && selectedIngredients.size === 0) {
             loadDishes();
             return;
         }
@@ -77,10 +80,15 @@ const HomeScreen: React.FC = () => {
         Keyboard.dismiss();
         try {
             setIsLoadingDishes(true);
+            const ingredientIds = selectedIngredients.size > 0 
+                ? Array.from(selectedIngredients.keys()) 
+                : undefined;
+            
             const response = await searchRecipes({ 
                 keyword: searchQuery, 
                 pageNumber: 1, 
-                pageSize: 20 
+                pageSize: 20,
+                ingredientIds
             });
             setDishes(response.items);
         } catch (error) {
@@ -94,7 +102,76 @@ const HomeScreen: React.FC = () => {
 
     const handleClearSearch = () => {
         setSearchQuery('');
+        setSelectedIngredients(new Map());
         loadDishes();
+    };
+
+    // ✅ HÀM MỚI: Toggle chọn/bỏ chọn nguyên liệu
+    const handleIngredientPress = async (ingredientId: string, ingredientName: string) => {
+        const newSelectedIngredients = new Map(selectedIngredients);
+        
+        if (newSelectedIngredients.has(ingredientId)) {
+            // Bỏ chọn nếu đã được chọn
+            newSelectedIngredients.delete(ingredientId);
+        } else {
+            // Thêm vào danh sách được chọn
+            newSelectedIngredients.set(ingredientId, ingredientName);
+        }
+        
+        setSelectedIngredients(newSelectedIngredients);
+        setSearchQuery(''); // Clear search query khi chọn ingredient
+        
+        try {
+            setIsLoadingDishes(true);
+            
+            if (newSelectedIngredients.size === 0) {
+                // Nếu không có nguyên liệu nào được chọn, load lại dishes mặc định
+                await loadDishes();
+            } else {
+                // Tìm kiếm với danh sách nguyên liệu được chọn
+                const ingredientIds = Array.from(newSelectedIngredients.keys());
+                const response = await searchRecipes({ 
+                    pageNumber: 1, 
+                    pageSize: 20,
+                    ingredientIds
+                });
+                setDishes(response.items);
+            }
+        } catch (error) {
+            console.error('Error searching by ingredients:', error);
+            setDishes([]);
+            Alert.alert("Lỗi", "Không thể tìm kiếm món ăn theo nguyên liệu này.");
+        } finally {
+            setIsLoadingDishes(false);
+        }
+    };
+
+    // ✅ HÀM MỚI: Xóa một nguyên liệu cụ thể
+    const handleRemoveIngredient = async (ingredientId: string) => {
+        const newSelectedIngredients = new Map(selectedIngredients);
+        newSelectedIngredients.delete(ingredientId);
+        setSelectedIngredients(newSelectedIngredients);
+        
+        try {
+            setIsLoadingDishes(true);
+            
+            if (newSelectedIngredients.size === 0) {
+                await loadDishes();
+            } else {
+                const ingredientIds = Array.from(newSelectedIngredients.keys());
+                const response = await searchRecipes({ 
+                    pageNumber: 1, 
+                    pageSize: 20,
+                    ingredientIds
+                });
+                setDishes(response.items);
+            }
+        } catch (error) {
+            console.error('Error searching by ingredients:', error);
+            setDishes([]);
+        } finally {
+            setIsLoadingDishes(false);
+        }
     };
 
     const loadAllData = async () => {
@@ -140,10 +217,6 @@ const HomeScreen: React.FC = () => {
         navigation.navigate('ViewRecipeScreen', { recipeId });
     };
 
-    const handleIngredientPress = (ingredientId: string) => {
-        navigation.navigate('IngredientDetail', { ingredientId });
-    };
-
     const handleProfilePress = (author: any) => {
         const username = author?.userName || author?.username;
         if (username) {
@@ -186,7 +259,6 @@ const HomeScreen: React.FC = () => {
         }
     };
 
-    // ✅ HÀM CHUYỂN HƯỚNG ĐẾN TRANG INGREDIENTS
     const handleViewAllIngredients = () => {
         navigation.navigate('IngredientsScreen');
     };
@@ -235,12 +307,33 @@ const HomeScreen: React.FC = () => {
                             onSubmitEditing={handleSearch}
                             returnKeyType="search"
                         />
-                        {searchQuery.length > 0 && (
+                        {(searchQuery.length > 0 || selectedIngredients.size > 0) && (
                             <TouchableOpacity onPress={handleClearSearch}>
                                 <Icon name="close-circle" size={20} color="#9CA3AF" />
                             </TouchableOpacity>
                         )}
                     </View>
+                    
+                    {/* ✅ HIỂN THỊ DANH SÁCH CHIPS NGUYÊN LIỆU ĐƯỢC CHỌN */}
+                    {selectedIngredients.size > 0 && (
+                        <View style={styles.selectedIngredientsContainer}>
+                            <ScrollView 
+                                horizontal 
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={styles.chipsScrollContent}
+                            >
+                                {Array.from(selectedIngredients.entries()).map(([id, name]) => (
+                                    <View key={id} style={styles.selectedIngredientChip}>
+                                        <MaterialIcon name="food-apple" size={16} color={BRAND_COLOR} />
+                                        <Text style={styles.selectedIngredientText}>{name}</Text>
+                                        <TouchableOpacity onPress={() => handleRemoveIngredient(id)}>
+                                            <Icon name="close-circle" size={16} color="#9CA3AF" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
                 </View>
 
                 {/* Ingredients Section */}
@@ -248,7 +341,6 @@ const HomeScreen: React.FC = () => {
                     <View style={styles.sectionHeader}>
                         <MaterialIcon name="food-apple" size={22} color={BRAND_COLOR} />
                         <Text style={styles.sectionTitle}>Danh sách nguyên liệu</Text>
-                        {/* ✅ NÚT XEM TẤT CẢ - BỎ BADGE SỐ LƯỢNG */}
                         <TouchableOpacity 
                             style={styles.viewAllButton}
                             onPress={handleViewAllIngredients}
@@ -269,38 +361,57 @@ const HomeScreen: React.FC = () => {
                             showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.horizontalScrollContent}
                         >
-                            {ingredients.map(item => (
-                                <TouchableOpacity 
-                                    key={item.id} 
-                                    style={styles.recentCard}
-                                    onPress={() => handleIngredientPress(item.id)}
-                                >
-                                    <View style={styles.recentCardImage}>
-                                        {item.imageUrl ? (
-                                            <Image 
-                                                source={{ uri: item.imageUrl }} 
-                                                style={{ width: '100%', height: '100%', borderRadius: 12 }}
-                                                resizeMode="cover"
-                                            />
-                                        ) : (
-                                            <MaterialIcon name="food-apple" size={32} color={BRAND_COLOR} />
-                                        )}
-                                        {item.isNew && (
-                                            <View style={styles.newBadge}>
-                                                <Text style={styles.newBadgeText}>Mới</Text>
+                            {ingredients.map(item => {
+                                const isSelected = selectedIngredients.has(item.id);
+                                
+                                return (
+                                    <TouchableOpacity 
+                                        key={item.id} 
+                                        style={[
+                                            styles.recentCard,
+                                            // ✅ HIGHLIGHT NGUYÊN LIỆU ĐƯỢC CHỌN
+                                            isSelected && {
+                                                borderWidth: 2,
+                                                borderColor: BRAND_COLOR,
+                                                backgroundColor: '#F0FDF4'
+                                            }
+                                        ]}
+                                        onPress={() => handleIngredientPress(item.id, item.name)}
+                                    >
+                                        {/* ✅ HIỂN THỊ CHECKMARK NẾU ĐƯỢC CHỌN */}
+                                        {isSelected && (
+                                            <View style={styles.selectedBadge}>
+                                                <Icon name="checkmark-circle" size={24} color={BRAND_COLOR} />
                                             </View>
                                         )}
-                                    </View>
-                                    <Text style={styles.recentCardText} numberOfLines={2}>
-                                        {item.name}
-                                    </Text>
-                                    {item.categoryNames && item.categoryNames.length > 0 && (
-                                        <Text style={styles.categoryText} numberOfLines={1}>
-                                            {item.categoryNames[0].name}
+                                        
+                                        <View style={styles.recentCardImage}>
+                                            {item.imageUrl ? (
+                                                <Image 
+                                                    source={{ uri: item.imageUrl }} 
+                                                    style={{ width: '100%', height: '100%', borderRadius: 12 }}
+                                                    resizeMode="cover"
+                                                />
+                                            ) : (
+                                                <MaterialIcon name="food-apple" size={32} color={BRAND_COLOR} />
+                                            )}
+                                            {item.isNew && (
+                                                <View style={styles.newBadge}>
+                                                    <Text style={styles.newBadgeText}>Mới</Text>
+                                                </View>
+                                            )}
+                                        </View>
+                                        <Text style={styles.recentCardText} numberOfLines={2}>
+                                            {item.name}
                                         </Text>
-                                    )}
-                                </TouchableOpacity>
-                            ))}
+                                        {item.categoryNames && item.categoryNames.length > 0 && (
+                                            <Text style={styles.categoryText} numberOfLines={1}>
+                                                {item.categoryNames[0].name}
+                                            </Text>
+                                        )}
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </ScrollView>
                     ) : (
                         <View style={{ alignItems: 'center', paddingVertical: 20 }}>
@@ -314,7 +425,11 @@ const HomeScreen: React.FC = () => {
                     <View style={styles.sectionHeader}>
                         <MaterialIcon name="chef-hat" size={22} color={BRAND_COLOR} />
                         <Text style={styles.sectionTitle}>
-                            {isSearching ? "Kết quả tìm kiếm" : "Hôm nay ăn gì?"}
+                            {selectedIngredients.size > 0
+                                ? `Món ăn với ${selectedIngredients.size} nguyên liệu` 
+                                : isSearching 
+                                    ? "Kết quả tìm kiếm" 
+                                    : "Hôm nay ăn gì?"}
                         </Text>
                     </View>
 
