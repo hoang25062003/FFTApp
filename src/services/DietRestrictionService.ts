@@ -5,7 +5,7 @@ import { TokenManager, ApiException } from './AuthService';
 // CONSTANTS
 // ============================================
 const BASE_URL = `${API_BASE_URL}/api`;
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 300000;
 
 // ============================================
 // ENUMS

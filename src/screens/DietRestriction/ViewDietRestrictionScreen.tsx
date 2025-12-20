@@ -487,7 +487,7 @@ const ViewDietRestrictionScreen: React.FC = () => {
   ), [activeSearchQuery, filterType]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View>
       <HeaderApp isHome={false} onBackPress={handleBackPress} />
 
       {isLoading && !isRefreshing ? (
@@ -513,7 +513,7 @@ const ViewDietRestrictionScreen: React.FC = () => {
           ListEmptyComponent={emptyComponent}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -7,7 +7,7 @@ import { Share, Alert } from 'react-native';
 // ============================================
 const BASE_URL = `${API_BASE_URL}/api`;
 const WEB_URL = 'https://sep-490-ftcdhmm-ui.vercel.app';
-const DEFAULT_TIMEOUT = 30000;
+const DEFAULT_TIMEOUT = 300000;
 
 class ApiException extends Error {
   status: number;

@@ -1,4 +1,4 @@
-// FILE: src/screens/HealthGoal/ViewGoalScreen.tsx
+SafeAreaView// FILE: src/screens/HealthGoal/ViewGoalScreen.tsx
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -562,9 +562,9 @@ const ViewGoalScreen: React.FC = () => {
   const currentLibrary = getFilteredGoals();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <HeaderApp isHome={false} />
+      <HeaderApp isHome={true} />
 
       <ScrollView 
         showsVerticalScrollIndicator={false}
@@ -896,7 +896,7 @@ const ViewGoalScreen: React.FC = () => {
         </Modal>
       )}
 
-    </SafeAreaView>
+    </View>
   );
 };
 

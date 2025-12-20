@@ -123,19 +123,19 @@ const ViewHealthMetricScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <HeaderApp isHome={false} onBackPress={handleBackPress} />
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={BRAND_COLOR} />
           <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!currentMetric) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <HeaderApp isHome={false} onBackPress={handleBackPress} />
         <View style={styles.emptyContainer}>
           <View style={styles.emptyIconWrapper}>
@@ -150,14 +150,14 @@ const ViewHealthMetricScreen: React.FC = () => {
             <Text style={styles.createButtonText}>Tạo bản ghi mới</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   const bmiCategory = getBMICategory(currentMetric.bmi);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <HeaderApp isHome={false} onBackPress={handleBackPress} />
       <ScrollView 
         style={styles.scrollView}
@@ -511,7 +511,7 @@ const ViewHealthMetricScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

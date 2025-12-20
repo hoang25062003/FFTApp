@@ -117,7 +117,7 @@ const ScanScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container} >
+        <View style={styles.container} >
             <StatusBar barStyle="dark-content" backgroundColor="#8BC34A" />
             <HeaderApp isHome={false} onBackPress={handleBackPress} />
 
@@ -267,7 +267,7 @@ const ScanScreen: React.FC = () => {
                 </ScrollView>
                 {/* Đã xóa View Footer ở đây */}
             </View>
-        </SafeAreaView>
+        </View>
     );
 };
 

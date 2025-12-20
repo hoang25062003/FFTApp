@@ -5,7 +5,7 @@ import { TokenManager, ApiException } from './AuthService';
 // CONSTANTS
 // ============================================
 const BASE_URL = `${API_BASE_URL}/api`;
-const REQUEST_TIMEOUT = 60000; // 60 seconds (AI processing might take longer)
+const REQUEST_TIMEOUT = 300000; // 60 seconds (AI processing might take longer)
 
 // ============================================
 // TYPES

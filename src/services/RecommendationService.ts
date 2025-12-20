@@ -6,7 +6,7 @@ import { Author, IngredientName, Label } from './RecipeService';
 // CONSTANTS
 // ============================================
 const BASE_URL = `${API_BASE_URL}/api`;
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 300000;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // ============================================

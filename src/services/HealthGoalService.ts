@@ -9,7 +9,7 @@ import { getNutrients, NutrientInfo } from './NutrientService'; // Import để 
 // =============================================================================
 
 const BASE_URL = `${API_BASE_URL}/api`;
-const DEFAULT_TIMEOUT = 30000;
+const DEFAULT_TIMEOUT = 300000;
 
 class ApiException extends Error {
   status: number;

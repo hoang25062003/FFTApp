@@ -5,7 +5,7 @@ import { TokenManager, ApiException } from './AuthService';
 // CONSTANTS
 // ============================================
 const BASE_URL = API_BASE_URL ? `${API_BASE_URL}/api` : 'https://your-api-url.com/api'; // Fallback nếu chưa config env
-const REQUEST_TIMEOUT = 30000; // 30 seconds
+const REQUEST_TIMEOUT = 300000; // 30 seconds
 
 // ============================================
 // TYPES

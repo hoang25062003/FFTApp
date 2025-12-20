@@ -16,7 +16,7 @@ import {
     unsaveRecipe, 
     getSavedRecipes, 
     searchRecipes,
-    shareRecipe // ✅ THÊM import
+    shareRecipe
 } from '../../services/RecipeService';
 import { getIngredients, Ingredient } from '../../services/IngredientService';
 import { getAverageRating, AverageRatingResponse } from '../../services/RatingService';
@@ -29,7 +29,7 @@ const HomeScreen: React.FC = () => {
     const [isLoadingIngredients, setIsLoadingIngredients] = useState(true);
     const [isLoadingDishes, setIsLoadingDishes] = useState(true);
     const [savingRecipes, setSavingRecipes] = useState<Set<string>>(new Set());
-    const [sharingRecipes, setSharingRecipes] = useState<Set<string>>(new Set()); // ✅ THÊM
+    const [sharingRecipes, setSharingRecipes] = useState<Set<string>>(new Set());
     
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [dishes, setDishes] = useState<MyRecipe[]>([]);
@@ -112,6 +112,7 @@ const HomeScreen: React.FC = () => {
         }
     };
 
+    // ✅ SỬA: Cập nhật cách truyền ingredientIds
     const handleSearch = async () => {
         if (!searchQuery.trim() && selectedIngredients.size === 0) {
             loadDishes();
@@ -121,12 +122,13 @@ const HomeScreen: React.FC = () => {
         Keyboard.dismiss();
         try {
             setIsLoadingDishes(true);
+            // ✅ Lấy ingredientIds từ selectedIngredients
             const ingredientIds = selectedIngredients.size > 0 
                 ? Array.from(selectedIngredients.keys()) 
                 : undefined;
             
             const response = await searchRecipes({ 
-                keyword: searchQuery, 
+                keyword: searchQuery || undefined, 
                 pageNumber: 1, 
                 pageSize: 20,
                 ingredientIds
@@ -146,6 +148,7 @@ const HomeScreen: React.FC = () => {
         loadDishes();
     };
 
+    // ✅ SỬA: Cập nhật cách truyền ingredientIds
     const handleIngredientPress = async (ingredientId: string, ingredientName: string) => {
         const newSelectedIngredients = new Map(selectedIngredients);
         
@@ -164,6 +167,7 @@ const HomeScreen: React.FC = () => {
             if (newSelectedIngredients.size === 0) {
                 await loadDishes();
             } else {
+                // ✅ Lấy ingredientIds từ newSelectedIngredients
                 const ingredientIds = Array.from(newSelectedIngredients.keys());
                 const response = await searchRecipes({ 
                     pageNumber: 1, 
@@ -180,6 +184,7 @@ const HomeScreen: React.FC = () => {
         }
     };
 
+    // ✅ SỬA: Cập nhật cách truyền ingredientIds
     const handleRemoveIngredient = async (ingredientId: string) => {
         const newSelectedIngredients = new Map(selectedIngredients);
         newSelectedIngredients.delete(ingredientId);
@@ -191,6 +196,7 @@ const HomeScreen: React.FC = () => {
             if (newSelectedIngredients.size === 0) {
                 await loadDishes();
             } else {
+                // ✅ Lấy ingredientIds từ newSelectedIngredients
                 const ingredientIds = Array.from(newSelectedIngredients.keys());
                 const response = await searchRecipes({ 
                     pageNumber: 1, 
@@ -243,6 +249,7 @@ const HomeScreen: React.FC = () => {
                         (async () => {
                             try {
                                 setIsLoadingDishes(true);
+                                // ✅ Lấy ingredientIds từ selectedFromScan
                                 const ingredientIds = Array.from(selectedFromScan.keys());
                                 const response = await searchRecipes({
                                     pageNumber: 1,
@@ -333,7 +340,6 @@ const HomeScreen: React.FC = () => {
         }
     };
 
-    // ✅ THÊM handler cho share
     const handleShareRecipe = async (recipeId: string, recipeName: string) => {
         if (sharingRecipes.has(recipeId)) return;
         
@@ -375,7 +381,7 @@ const HomeScreen: React.FC = () => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View>
             <HeaderApp />
 
             <ScrollView 
@@ -553,7 +559,7 @@ const HomeScreen: React.FC = () => {
                                 : 'Ẩn danh';
                             const isSaved = savedRecipeIds.has(dish.id);
                             const isSaving = savingRecipes.has(dish.id);
-                            const isSharing = sharingRecipes.has(dish.id); // ✅ THÊM
+                            const isSharing = sharingRecipes.has(dish.id);
                             
                             const ratingDisplay = getRatingDisplay(dish.id);
                             const isLoadingRating = loadingRatings.has(dish.id);
@@ -663,7 +669,6 @@ const HomeScreen: React.FC = () => {
                                             )}
                                         </TouchableOpacity>
 
-                                        {/* ✅ UPDATED: Share button */}
                                         <TouchableOpacity 
                                             style={styles.actionButton}
                                             onPress={() => handleShareRecipe(dish.id, dish.name)}
@@ -704,7 +709,7 @@ const HomeScreen: React.FC = () => {
 
                 <View style={{ height: 40 }} />
             </ScrollView>
-        </SafeAreaView>
+        </View>
     );
 };
 

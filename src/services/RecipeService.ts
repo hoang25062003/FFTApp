@@ -6,7 +6,7 @@ import { Share, Alert } from 'react-native';
 // ============================================
 const BASE_URL = `${API_BASE_URL}/api`;
 const WEB_URL = 'https://sep-490-ftcdhmm-ui.vercel.app';
-const REQUEST_TIMEOUT = 30000;
+const REQUEST_TIMEOUT = 300000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 const CACHE_TTL = 5 * 60 * 1000;
@@ -67,14 +67,14 @@ export interface RecipeIngredient {
   ingredientId?: string;
   name: string;
   quantityGram: number;
-  restrictionType?: string | null; // ✅ THÊM
+  restrictionType?: string | null;
 }
 
 export interface RecipeLabel {
   id: string;
   name: string;
   colorCode: string;
-  lastUpdatedUtc?: string; // ✅ THÊM
+  lastUpdatedUtc?: string;
 }
 
 export interface CookingStepImageDetail {
@@ -135,7 +135,7 @@ export interface RecipeDetail {
     lastName: string;
     email: string;
     avatarUrl?: string;
-    userName?: string; // ✅ THÊM
+    userName?: string;
   };
   isFavorited?: boolean;
   isSaved?: boolean;
@@ -147,7 +147,7 @@ export interface RecipeDetail {
   createdAt?: string;
   updatedAt?: string;
   parent?: RecipeParent;
-  viewCount?: number; // ✅ THÊM
+  viewCount?: number;
 }
 
 export type RecipeIngredientPayload = {
@@ -343,22 +343,6 @@ const buildRecipeFormData = async (
   return formData;
 };
 
-const buildQueryParams = (params: Record<string, any>): URLSearchParams => {
-  const queryParams = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      if (Array.isArray(value)) {
-        value.forEach((item, index) => {
-          queryParams.append(`${key}[${index}]`, item.toString());
-        });
-      } else {
-        queryParams.append(key, value.toString());
-      }
-    }
-  });
-  return queryParams;
-};
-
 // ============================================
 // CACHE
 // ============================================
@@ -508,16 +492,16 @@ export async function getRecipes(params?: RecipeFilterParams): Promise<MyRecipeR
   const cached = recipeCache.get<MyRecipeResponse>(cacheKey);
   if (cached) return cached;
 
-  const queryParams = buildQueryParams({
-    'PaginationParams.PageNumber': params?.page || 1,
-    'PaginationParams.PageSize': params?.pageSize || 10,
-    search: params?.search,
-    difficulty: params?.difficulty,
-    labelId: params?.labelId,
-    sortBy: params?.sortBy,
-  });
+  const queryParams = new URLSearchParams();
+  queryParams.append('PaginationParams.PageNumber', String(params?.page || 1));
+  queryParams.append('PaginationParams.PageSize', String(params?.pageSize || 10));
+  
+  if (params?.search) queryParams.append('search', params.search);
+  if (params?.difficulty) queryParams.append('difficulty', params.difficulty);
+  if (params?.labelId) queryParams.append('labelId', params.labelId);
+  if (params?.sortBy) queryParams.append('sortBy', params.sortBy);
 
-  const endpoint = queryParams.toString() ? `/Recipe?${queryParams.toString()}` : '/Recipe';
+  const endpoint = `/Recipe?${queryParams.toString()}`;
   const result = await recipeHttpClient.request<MyRecipeResponse>(endpoint, { method: 'GET' }, false);
   recipeCache.set(cacheKey, result);
   return result;
@@ -543,13 +527,12 @@ export async function getMyRecipes(params?: MyRecipesParams): Promise<MyRecipeRe
   const cached = recipeCache.get<MyRecipeResponse>(cacheKey);
   if (cached) return cached;
 
-  const queryParams = buildQueryParams({
-    PageNumber: params?.page,
-    PageSize: params?.pageSize,
-    Title: params?.title,
-  });
+  const queryParams = new URLSearchParams();
+  queryParams.append('PageNumber', String(params?.page || 1));
+  queryParams.append('PageSize', String(params?.pageSize || 10));
+  if (params?.title) queryParams.append('Title', params.title);
 
-  const endpoint = queryParams.toString() ? `/Recipe/my?${queryParams.toString()}` : '/Recipe/my';
+  const endpoint = `/Recipe/my?${queryParams.toString()}`;
   const result = await recipeHttpClient.request<MyRecipeResponse>(endpoint, { method: 'GET' }, true);
   recipeCache.set(cacheKey, result);
   return result;
@@ -593,12 +576,11 @@ export async function getRecipesByUserName(
   const cached = recipeCache.get<MyRecipeResponse>(cacheKey);
   if (cached) return cached;
 
-  const queryParams = buildQueryParams({
-    PageNumber: params?.pageNumber || 1,
-    PageSize: params?.pageSize || 12,
-  });
+  const queryParams = new URLSearchParams();
+  queryParams.append('PageNumber', String(params?.pageNumber || 1));
+  queryParams.append('PageSize', String(params?.pageSize || 12));
 
-  const endpoint = `/Recipe/user/${userName}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  const endpoint = `/Recipe/user/${userName}?${queryParams.toString()}`;
   const result = await recipeHttpClient.request<MyRecipeResponse>(endpoint, { method: 'GET' }, false);
   recipeCache.set(cacheKey, result);
   return result;
@@ -615,11 +597,10 @@ export async function getFavoriteRecipes(params?: {
   const cached = recipeCache.get<MyRecipeResponse>(cacheKey);
   if (cached) return cached;
 
-  const queryParams = buildQueryParams({
-    'PaginationParams.PageNumber': params?.pageNumber || 1,
-    'PaginationParams.PageSize': params?.pageSize || 10,
-    ...(params?.keyword && { Keyword: params.keyword }),
-  });
+  const queryParams = new URLSearchParams();
+  queryParams.append('PaginationParams.PageNumber', String(params?.pageNumber || 1));
+  queryParams.append('PaginationParams.PageSize', String(params?.pageSize || 10));
+  if (params?.keyword) queryParams.append('Keyword', params.keyword);
 
   const endpoint = `/recipe/favorites?${queryParams.toString()}`;
   const result = await recipeHttpClient.request<MyRecipeResponse>(endpoint, { method: 'GET' }, true);
@@ -652,11 +633,10 @@ export async function getSavedRecipes(params?: {
   const cached = recipeCache.get<MyRecipeResponse>(cacheKey);
   if (cached) return cached;
 
-  const queryParams = buildQueryParams({
-    'PaginationParams.PageNumber': params?.pageNumber || 1,
-    'PaginationParams.PageSize': params?.pageSize || 10,
-    ...(params?.keyword && { Keyword: params.keyword }),
-  });
+  const queryParams = new URLSearchParams();
+  queryParams.append('PaginationParams.PageNumber', String(params?.pageNumber || 1));
+  queryParams.append('PaginationParams.PageSize', String(params?.pageSize || 10));
+  if (params?.keyword) queryParams.append('Keyword', params.keyword);
 
   const endpoint = `/recipe/saved?${queryParams.toString()}`;
   const result = await recipeHttpClient.request<MyRecipeResponse>(endpoint, { method: 'GET' }, true);
@@ -688,10 +668,9 @@ export async function getHistory(params?: {
   const cached = recipeCache.get<MyRecipeResponse>(cacheKey);
   if (cached) return cached;
 
-  const queryParams = buildQueryParams({
-    'PaginationParams.PageNumber': params?.pageNumber || 1,
-    'PaginationParams.PageSize': params?.pageSize || 10,
-  });
+  const queryParams = new URLSearchParams();
+  queryParams.append('PaginationParams.PageNumber', String(params?.pageNumber || 1));
+  queryParams.append('PaginationParams.PageSize', String(params?.pageSize || 10));
 
   const endpoint = `/Recipe/history?${queryParams.toString()}`;
   const result = await recipeHttpClient.request<MyRecipeResponse>(endpoint, { method: 'GET' }, true);
@@ -706,25 +685,41 @@ export async function searchRecipes(params?: RecipeSearchParams): Promise<MyReci
   const cached = recipeCache.get<MyRecipeResponse>(cacheKey);
   if (cached) return cached;
 
-  const queryParams = buildQueryParams({
-    Keyword: params?.keyword || '',
-    'PaginationParams.PageNumber': params?.pageNumber || 1,
-    'PaginationParams.PageSize': params?.pageSize || 10,
-    ...(params?.difficulty && { Difficulty: params.difficulty }),
-    ...(params?.sortBy && { SortBy: params.sortBy }),
-    ...(params?.ration !== undefined && { Ration: params.ration }),
-    ...(params?.maxCookTime !== undefined && { MaxCookTime: params.maxCookTime }),
-  });
+  const queryParams = new URLSearchParams();
+  
+  // Add basic params
+  queryParams.append('Keyword', params?.keyword || '');
+  queryParams.append('PaginationParams.PageNumber', String(params?.pageNumber || 1));
+  queryParams.append('PaginationParams.PageSize', String(params?.pageSize || 10));
+  
+  // Add optional params
+  if (params?.difficulty) {
+    queryParams.append('Difficulty', params.difficulty);
+  }
+  
+  if (params?.sortBy) {
+    queryParams.append('SortBy', params.sortBy);
+  }
+  
+  if (params?.ration !== undefined) {
+    queryParams.append('Ration', String(params.ration));
+  }
+  
+  if (params?.maxCookTime !== undefined) {
+    queryParams.append('MaxCookTime', String(params.maxCookTime));
+  }
 
-  if (params?.labelIds && params.labelIds.length > 0) {
-    params.labelIds.forEach((id, index) => {
-      queryParams.append(`LabelIds[${index}]`, id);
+  // ✅ FIXED: Use IncludeIngredientIds instead of IngredientIds
+  if (params?.ingredientIds && params.ingredientIds.length > 0) {
+    params.ingredientIds.forEach((id) => {
+      queryParams.append('IncludeIngredientIds', id);
     });
   }
 
-  if (params?.ingredientIds && params.ingredientIds.length > 0) {
-    params.ingredientIds.forEach((id, index) => {
-      queryParams.append(`IngredientIds[${index}]`, id);
+  // Add LabelIds if present
+  if (params?.labelIds && params.labelIds.length > 0) {
+    params.labelIds.forEach((id) => {
+      queryParams.append('LabelIds', id);
     });
   }
 
@@ -733,6 +728,8 @@ export async function searchRecipes(params?: RecipeSearchParams): Promise<MyReci
   recipeCache.set(cacheKey, result);
   return result;
 }
+
+// ========== SHARE RECIPE ==========
 
 export async function shareRecipe(recipeId: string, recipeName?: string): Promise<void> {
   if (!recipeId) throw new Error('Recipe ID is required');
@@ -743,9 +740,9 @@ export async function shareRecipe(recipeId: string, recipeName?: string): Promis
     await Share.share({
       title: 'FitFood Tracker',
       message: `Khám phá công thức "${recipeName || 'hấp dẫn'}" tại đây: ${shareUrl}`,
-      url: shareUrl, // Dành cho iOS
+      url: shareUrl,
     }, {
-      dialogTitle: 'Chia sẻ qua:', // Android
+      dialogTitle: 'Chia sẻ qua:',
     });
   } catch (error: any) {
     Alert.alert('Lỗi', 'Không thể chia sẻ: ' + error.message);
