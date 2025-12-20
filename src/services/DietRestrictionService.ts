@@ -35,7 +35,6 @@ export interface CreateIngredientCategoryRestrictionRequest {
   expiredAtUtc?: string;
 }
 
-// Đã bỏ sortBy theo yêu cầu
 export interface UserDietRestrictionFilterRequest {
   keyword?: string;
   type?: RestrictionType | string;
@@ -47,7 +46,7 @@ export interface UserDietRestrictionResponse {
   ingredientName?: string;
   ingredientCategoryId?: string;
   ingredientCategoryName?: string;
-  type: RestrictionType | string;
+  type: RestrictionType | string | { value: string };
   notes?: string;
   expiredAtUtc?: string;
 }
@@ -226,17 +225,11 @@ export const createIngredientCategoryRestriction = async (
   });
 };
 
-/**
- * Get user's dietary restrictions with filtering
- * GET /api/UserDietRestriction?Keyword=...&Type=...
- * Đã cập nhật: Bỏ sortBy, dùng Params PascalCase (Keyword, Type)
- */
 export const getUserDietRestrictions = async (
   filter?: UserDietRestrictionFilterRequest
 ): Promise<UserDietRestrictionListResponse> => {
   const params = new URLSearchParams();
   
-  // URL mẫu: ...?Keyword=ca&Type=ALLERGY
   if (filter?.keyword) params.append('Keyword', filter.keyword);
   if (filter?.type) params.append('Type', filter.type);
 
@@ -252,9 +245,6 @@ export const getUserDietRestrictions = async (
   return data;
 };
 
-/**
- * Get active (non-expired) dietary restrictions
- */
 export const getActiveDietRestrictions = async (
   filter?: UserDietRestrictionFilterRequest
 ): Promise<UserDietRestrictionListResponse> => {
@@ -263,9 +253,6 @@ export const getActiveDietRestrictions = async (
   return allRestrictions.filter(restriction => !isRestrictionExpired(restriction.expiredAtUtc));
 };
 
-/**
- * Get dietary restrictions by type
- */
 export const getRestrictionsByType = async (
   type: RestrictionType | string
 ): Promise<UserDietRestrictionListResponse> => {
@@ -307,17 +294,28 @@ export const hasIngredientCategoryRestriction = async (
 export const getRestrictionStats = async () => {
   try {
     const restrictions = await getUserDietRestrictions();
+    
+    const getTypeValue = (type: any): string => {
+      if (!type) return '';
+      if (typeof type === 'object' && type.value) {
+        return type.value;
+      }
+      return String(type);
+    };
+    
+    const allByType = {
+      allergy: restrictions.filter(r => getTypeValue(r.type) === 'ALLERGY').length,
+      dislike: restrictions.filter(r => getTypeValue(r.type) === 'DISLIKE').length,
+      temporaryAvoid: restrictions.filter(r => getTypeValue(r.type) === 'TEMPORARYAVOID').length,
+    };
+    
     const active = restrictions.filter(r => !isRestrictionExpired(r.expiredAtUtc));
     
     return {
       total: restrictions.length,
       active: active.length,
       expired: restrictions.length - active.length,
-      byType: {
-        allergy: active.filter(r => r.type === RestrictionType.ALLERGY).length,
-        dislike: active.filter(r => r.type === RestrictionType.DISLIKE).length,
-        temporaryAvoid: active.filter(r => r.type === RestrictionType.TEMPORARYAVOID).length,
-      },
+      byType: allByType,
       ingredients: active.filter(r => r.ingredientId).length,
       categories: active.filter(r => r.ingredientCategoryId).length,
     };

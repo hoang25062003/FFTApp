@@ -416,12 +416,6 @@ const ViewDietRestrictionScreen: React.FC = () => {
       <View style={styles.statsCard}>
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Icon name="format-list-checks" size={20} color={BRAND_COLOR} />
-            <Text style={styles.statValue}>{stats.total}</Text>
-            <Text style={styles.statLabel}>Tổng số</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
             <Icon name="alert-circle" size={20} color="#EF4444" />
             <Text style={styles.statValue}>{stats.byType.allergy}</Text>
             <Text style={styles.statLabel}>Dị ứng</Text>
@@ -431,6 +425,12 @@ const ViewDietRestrictionScreen: React.FC = () => {
             <Icon name="thumb-down" size={20} color="#F59E0B" />
             <Text style={styles.statValue}>{stats.byType.dislike}</Text>
             <Text style={styles.statLabel}>Không thích</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Icon name="clock-time-four-outline" size={20} color="#8B5CF6" />
+            <Text style={styles.statValue}>{stats.byType.temporaryAvoid}</Text>
+            <Text style={styles.statLabel}>Tạm tránh</Text>
           </View>
         </View>
       </View>

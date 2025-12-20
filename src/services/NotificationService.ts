@@ -11,7 +11,7 @@ const REQUEST_TIMEOUT = 30000;
 // TYPES
 // ============================================
 
-export type NotificationType = 'SYSTEM' | 'COMMENT' | 'LIKE' | string;
+export type NotificationType = 'SYSTEM' | 'COMMENT' | 'LIKE' | 'RATING' | string;
 
 export type NotificationTypeInfo = {
     name: NotificationType;
@@ -34,6 +34,15 @@ export type NotificationItem = {
     isRead: boolean;
     createdAtUtc: string;
     senders: NotificationSender[]; 
+};
+
+// ✅ FIX: Thêm type cho response từ API
+export type NotificationResponse = {
+    items: NotificationItem[];
+    totalCount: number;
+    pageNumber: number;
+    pageSize: number;
+    totalPages: number;
 };
 
 // ============================================
@@ -66,7 +75,7 @@ export function getNotificationContent(item: NotificationItem): string {
     // 1. Nếu là SYSTEM (Có message)
     if (item.message) return item.message;
 
-    // 2. Nếu là tương tác (COMMENT/LIKE - message là null)
+    // 2. Nếu là tương tác (COMMENT/LIKE/RATING - message là null)
     if (item.senders && item.senders.length > 0) {
         const senders = item.senders;
         const firstSenderName = `${senders[0].lastName} ${senders[0].firstName}`;
@@ -83,6 +92,8 @@ export function getNotificationContent(item: NotificationItem): string {
                 return `${displayNames} đã bình luận về bài viết của bạn.`;
             case 'LIKE':
                 return `${displayNames} đã thích bài viết của bạn.`;
+            case 'RATING':
+                return `${displayNames} đã đánh giá bài viết của bạn.`;
             default:
                 return `${displayNames} đã tương tác với bạn.`;
         }
@@ -163,7 +174,13 @@ const client = new NotificationHttpClient(BASE_URL);
 // ============================================
 
 export const NotificationService = {
-    getMyNotifications: () => client.request<NotificationItem[]>('/notifications/myNotifications'),
+    // ✅ FIX: Thay đổi để trả về NotificationItem[] thay vì NotificationResponse
+    getMyNotifications: async (): Promise<NotificationItem[]> => {
+        const response = await client.request<NotificationResponse>('/notifications/myNotifications');
+        // Trích xuất items array từ response
+        return response?.items || [];
+    },
+    
     markAsRead: (id: string) => client.request<void>(`/notifications/${id}/mark-read`, { method: 'POST' }),
     
     // Export Utilities

@@ -23,7 +23,7 @@ import RatingService, {
   RatingResponse,
 } from '../../services/RatingService';
 import CommentService, { Comment, CreateCommentRequest } from '../../services/CommentService';
-import DietRestrictionService from '../../services/DietRestrictionService'; // ✅ THÊM
+import DietRestrictionService from '../../services/DietRestrictionService';
 import HeaderApp from '../../components/HeaderApp';
 import ReportDialog from '../../components/ReportDialog';
 
@@ -35,7 +35,6 @@ type RootStackParamList = {
 type ViewRecipeScreenRouteProp = RouteProp<RootStackParamList, 'ViewRecipe'>;
 type TabType = 'detail' | 'review' | 'comment';
 
-// ✅ THÊM: Loại cảnh báo
 interface RestrictionWarning {
   type: string;
   label: string;
@@ -61,6 +60,7 @@ const ViewRecipeScreen: React.FC = () => {
   const [loadingReview, setLoadingReview] = useState(false);
   const [loadingComment, setLoadingComment] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [isSharing, setIsSharing] = useState(false);
 
   // --- Rating State ---
   const [avgRatingData, setAvgRatingData] = useState<AverageRatingResponse>({ avgRating: 0, ratingCount: 0 });
@@ -87,14 +87,14 @@ const ViewRecipeScreen: React.FC = () => {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
 
-  // ✅ THÊM: State cho hạn chế ăn uống
+  // --- Diet Restriction State ---
   const [userRestrictions, setUserRestrictions] = useState<Map<string, RestrictionWarning>>(new Map());
 
   useEffect(() => {
     loadInitialData();
   }, [recipeId]);
 
-  // ✅ THÊM: Hàm lấy danh sách hạn chế ăn uống
+  // --- Hàm lấy danh sách hạn chế ăn uống ---
   const getUserRestrictions = async (): Promise<Map<string, RestrictionWarning>> => {
     try {
       const restrictions = await DietRestrictionService.getUserDietRestrictions({});
@@ -102,7 +102,6 @@ const ViewRecipeScreen: React.FC = () => {
       
       restrictions.forEach(item => {
         const ingredientName = item.ingredientName?.toLowerCase() || '';
-        // ✅ FIX: Xử lý type có thể là string hoặc object
         const restrictionType = typeof item.type === 'object' && item.type !== null
           ? (item.type as any).value 
           : item.type;
@@ -117,12 +116,12 @@ const ViewRecipeScreen: React.FC = () => {
       
       return restrictionMap;
     } catch (error) {
-      console.error('Error fetching restrictions:', error);
+      // console.error('Error fetching restrictions:', error);
       return new Map();
     }
   };
 
-  // ✅ THÊM: Hàm lấy config cảnh báo
+  // --- Hàm lấy config cảnh báo ---
   const getRestrictionWarningConfig = (restrictionType: string): RestrictionWarning | null => {
     if (!restrictionType) return null;
     
@@ -158,7 +157,7 @@ const ViewRecipeScreen: React.FC = () => {
     }
   };
 
-  // ✅ THÊM: Hàm kiểm tra cảnh báo cho từng nguyên liệu
+  // --- Hàm kiểm tra cảnh báo cho từng nguyên liệu ---
   const getRestrictionWarning = (ingredientName: string): RestrictionWarning | null => {
     return userRestrictions.get(ingredientName.toLowerCase()) || null;
   };
@@ -217,11 +216,9 @@ const ViewRecipeScreen: React.FC = () => {
     try {
       setLoadingReview(true);
       
-      // Gọi API lấy average rating
       const avgData = await RatingService.getAverageRating(recipeId);
       setAvgRatingData(avgData);
 
-      // Gọi API lấy danh sách ratings
       try {
         const ratingsData = await RatingService.getRecipeRatings(recipeId, { 
           pageNumber: 1, 
@@ -255,7 +252,7 @@ const ViewRecipeScreen: React.FC = () => {
     }
   };
 
-  // ✅ THÊM: Load restrictions khi tab detail active
+  // Load restrictions khi tab detail active
   useEffect(() => {
     if (activeTab === 'detail') {
       const loadRestrictions = async () => {
@@ -294,6 +291,33 @@ const ViewRecipeScreen: React.FC = () => {
       setRefreshing(false);
     }
   }, [recipeId, activeTab]);
+
+  // --- Xử lý chia sẻ công thức ---
+  const handleShareRecipe = async () => {
+    if (isSharing || !recipe) return;
+    
+    setIsSharing(true);
+    
+    try {
+      // Tạo URL chia sẻ công thức
+      const recipeUrl = `recipe/${recipeId}`;
+      const shareText = `Hãy thử công thức "${recipe.name}" - ${recipe.cookTime} phút nấu, dành cho ${recipe.ration} người`;
+      
+      // Gọi share native
+      if (require('react-native').Share) {
+        await require('react-native').Share.share({
+          message: shareText,
+          url: recipeUrl,
+          title: recipe.name,
+        });
+      }
+    } catch (error) {
+      // console.error('Error sharing recipe:', error);
+      Alert.alert('Thông báo', 'Không thể chia sẻ công thức lúc này');
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   // --- Xử lý gửi đánh giá ---
   const handleSendReview = async () => {
@@ -811,7 +835,7 @@ const ViewRecipeScreen: React.FC = () => {
                     </View>
                     <View style={styles.ingredientList}>
                       {recipe.ingredients?.map((ing, index) => {
-                        const warning = getRestrictionWarning(ing.name); // ✅ THÊM
+                        const warning = getRestrictionWarning(ing.name);
                         
                         return (
                           <View key={ing.ingredientId || index} style={styles.ingredientRow}>
@@ -819,7 +843,7 @@ const ViewRecipeScreen: React.FC = () => {
                             <View style={{ flex: 1 }}>
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                                 <Text style={styles.ingredientName}>{ing.name}</Text>
-                                {warning && ( // ✅ THÊM: Warning badge
+                                {warning && (
                                   <View style={[
                                     styles.warningBadge,
                                     { backgroundColor: warning.bgColor, borderColor: warning.color }
@@ -890,11 +914,18 @@ const ViewRecipeScreen: React.FC = () => {
                     <View style={styles.actionButtonsContainer}>
                       <TouchableOpacity
                         style={styles.duplicateButton}
-                        onPress={() => Alert.alert('Tạo bản sao', 'Chức năng tạo bản sao công thức đang được phát triển')}
+                        onPress={handleShareRecipe}
+                        disabled={isSharing}
                         activeOpacity={0.8}
                       >
-                        <Icon name="content-copy" size={20} color="#8BC34A" />
-                        <Text style={styles.duplicateButtonText}>Tạo bản sao</Text>
+                        {isSharing ? (
+                          <ActivityIndicator size="small" color="#8BC34A" />
+                        ) : (
+                          <>
+                            <Icon name="share-variant" size={20} color="#8BC34A" />
+                            <Text style={styles.duplicateButtonText}>Chia sẻ</Text>
+                          </>
+                        )}
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -915,6 +946,41 @@ const ViewRecipeScreen: React.FC = () => {
                           isFavorited && styles.saveButtonTextActive
                         ]}>
                           {isFavorited ? "Đã lưu" : "Lưu"}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+
+                  {isOwner && (
+                    <View style={styles.actionButtonsContainer}>
+                      <TouchableOpacity
+                        style={styles.duplicateButton}
+                        onPress={handleShareRecipe}
+                        disabled={isSharing}
+                        activeOpacity={0.8}
+                      >
+                        {isSharing ? (
+                          <ActivityIndicator size="small" color="#8BC34A" />
+                        ) : (
+                          <>
+                            <Icon name="share-variant" size={20} color="#8BC34A" />
+                            <Text style={styles.duplicateButtonText}>Chia sẻ</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.saveButton}
+                        onPress={handleEditRecipe}
+                        activeOpacity={0.8}
+                      >
+                        <Icon
+                          name="pencil"
+                          size={20}
+                          color="#FFFFFF"
+                        />
+                        <Text style={styles.saveButtonText}>
+                          Chỉnh sửa
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -1162,14 +1228,7 @@ const ViewRecipeScreen: React.FC = () => {
           <View style={{ height: 40 }} />
         </ScrollView>
 
-        {isOwner && (
-          <View style={styles.bottomAction}>
-            <TouchableOpacity style={styles.editButton} onPress={handleEditRecipe}>
-              <Icon name="pencil" size={20} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Chỉnh sửa công thức</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+
       </View>
     </SafeAreaView>
   );

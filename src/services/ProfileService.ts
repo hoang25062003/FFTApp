@@ -1,10 +1,12 @@
 import { API_BASE_URL } from '@env';
 import { TokenManager } from './AuthService';
+import { Share, Alert } from 'react-native';
 
 // ============================================
 // 1. CONFIG & CLIENT
 // ============================================
 const BASE_URL = `${API_BASE_URL}/api`;
+const WEB_URL = 'https://sep-490-ftcdhmm-ui.vercel.app';
 const DEFAULT_TIMEOUT = 30000;
 
 class ApiException extends Error {
@@ -78,16 +80,15 @@ export interface PublicProfileDto {
   dateOfBirth: string | null;
 }
 
-// ✅ CẬP NHẬT: Thêm các field cần thiết
 export interface UserFollowerDto {
   id: string;
   firstName: string;
   lastName: string;
   email: string;
-  userName: string; // ✅ Thêm để navigate
+  userName: string;
   avatarUrl?: string | null;
   fullName?: string;
-  isFollowing: boolean; // ✅ Thêm để hiển thị trạng thái follow
+  isFollowing: boolean;
 }
 
 // ============================================
@@ -144,12 +145,40 @@ const getFollowing = async () => {
   });
 };
 
+/**
+ * Chia sẻ profile của user qua Share API
+ * @param userName - Username của user cần chia sẻ
+ * @param fullName - Tên đầy đủ của user (optional)
+ */
+export async function shareProfile(userName: string, fullName?: string): Promise<void> {
+  if (!userName) throw new Error('Username is required');
+
+  const shareUrl = `${WEB_URL}/profile/${userName}`;
+  
+  try {
+    await Share.share({
+      title: 'FitFood Tracker',
+      message: `Khám phá profile "${fullName || userName}" tại đây: ${shareUrl}`,
+      url: shareUrl, // Dành cho iOS
+    }, {
+      dialogTitle: 'Chia sẻ qua:', // Android
+    });
+  } catch (error: any) {
+    Alert.alert('Lỗi', 'Không thể chia sẻ: ' + error.message);
+  }
+}
+
+// ============================================
+// 4. EXPORT
+// ============================================
+
 export const profileService = {
   getUserProfileByUsername,
   followUser,
   unfollowUser,
   getFollowers,
   getFollowing,
+  shareProfile,
 };
 
 export default profileService;

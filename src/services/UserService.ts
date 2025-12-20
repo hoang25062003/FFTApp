@@ -27,6 +27,7 @@ export type UserProfile = {
     bio: string | null;
     dateOfBirth: string | null;
     role?: UserRole; // Role của user
+    userName: string;
 };
 
 export type UpdateProfilePayload = {

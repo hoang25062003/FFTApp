@@ -11,7 +11,7 @@ const BASE_URL = `${API_BASE_URL}/api`;
 const TOKEN_KEY = 'userToken';
 const REFRESH_TOKEN_KEY = '@refresh_token';
 const USER_DATA_KEY = '@user_data';
-const REQUEST_TIMEOUT = 3000;
+const REQUEST_TIMEOUT = 30000;
 
 // ============================================
 // TYPES

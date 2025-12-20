@@ -7,15 +7,30 @@
       "distribution": "internal",
       "android": {
         "gradleCommand": ":app:assembleDebug"
+      },
+      "env": {
+        "API_BASE_URL": "http://fitfoodapi-env.eba-2q5iqsxc.ap-southeast-1.elasticbeanstalk.com",
+        "GOOGLE_WEB_CLIENT_ID": "684551161322-5hi7qcv5mq64eh8bemc5hns8uir15jdk.apps.googleusercontent.com"
       }
     },
     "preview": {
-      "distribution": "internal"
-    },
-    "production": {
-      "distribution": "store",
+      "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "API_BASE_URL": "http://fitfoodapi-env.eba-2q5iqsxc.ap-southeast-1.elasticbeanstalk.com",
+        "GOOGLE_WEB_CLIENT_ID": "684551161322-5hi7qcv5mq64eh8bemc5hns8uir15jdk.apps.googleusercontent.com"
+      }
+    },
+    "production": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "API_BASE_URL": "http://fitfoodapi-env.eba-2q5iqsxc.ap-southeast-1.elasticbeanstalk.com",
+        "GOOGLE_WEB_CLIENT_ID": "684551161322-5hi7qcv5mq64eh8bemc5hns8uir15jdk.apps.googleusercontent.com"
       }
     }
   },

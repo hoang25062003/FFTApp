@@ -1,34 +1,54 @@
-export const Colors = {
-  // Màu sắc chính từ ảnh
-  primary: '#8BC34A', // Màu xanh lá cây của nút Đăng nhập
-  secondary: '#4CAF50', // Có thể là màu đậm hơn của logo
-  background: '#FFFFFF',
-  textPrimary: '#333333', // Màu chữ đậm
-  textSecondary: '#666666', // Màu chữ mờ, placeholder
-  textLink: '#4CAF50', // Màu link "Quên mật khẩu?" và "Đăng ký"
-  border: '#CCCCCC', // Màu đường viền input
- // Màu Google
-  googleButton: '#FFFFFF', // Màu xanh Google
-  googleButtonLight: '#FFFFFF', // Nền trắng cho nút Google
-  googleBorder: '#BDBDBD', // Border xám nhạt cho nút Google
-  googleText: '#424242', // Text xám đậm cho nút Google
+// Color Constants
+export const BRAND_COLOR = '#8BC34A';
+export const BG_COLOR = '#F8F9FA';
+export const ERROR_COLOR = '#EF4444';
 
+// Neutral Colors
+export const COLORS = {
+  // Primary
+  brand: BRAND_COLOR,
+  
+  // Background
+  background: BG_COLOR,
+  
+  // Text Colors
+  text: {
+    primary: '#1F2937',
+    secondary: '#6B7280',
+    tertiary: '#9CA3AF',
+    disabled: '#D1D5DB',
+    white: '#FFFFFF',
+  },
+  
+  // Border & Divider
+  border: {
+    default: '#E5E7EB',
+    light: '#F3F4F6',
+  },
+  
+  // Background Variants
+  bg: {
+    default: '#FFFFFF',
+    light: '#F9FAFB',
+    lighter: '#F0F9FF',
+    success: '#ECFDF5',
+    error: '#FEF2F2',
+  },
+  
+  // Status Colors
+  status: {
+    error: ERROR_COLOR,
+    success: '#10B981',
+    warning: '#F59E0B',
+    info: '#3B82F6',
+  },
+  
+  // Overlay & Transparency
+  overlay: {
+    light: 'rgba(255,255,255,0.2)',
+    lighter: 'rgba(255,255,255,0.1)',
+    dark: 'rgba(0,0,0,0.4)',
+  },
+};
 
-  separator: '#E0E0E0', // Màu của đường kẻ "hoặc"
-  white: '#FFFFFF',
-  black: '#000000',
-   // Màu cảnh báo
-  error: '#FF0000',
-  
-  // Màu phụ trợ (ví dụ: cho icon Back)
-  accent: '#1E1E1E',
-  
-};
-export const FontSize = {
-    header: 28,
-    title: 20,
-    body: 16,
-    small: 14,
-    medium: 16,
-    large: 18,
-};
+export default COLORS;

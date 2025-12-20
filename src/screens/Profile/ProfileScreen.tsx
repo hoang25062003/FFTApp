@@ -22,9 +22,10 @@ import Pagination from '../../components/Pagination';
 import ReportDialog from '../../components/ReportDialog';
 
 import UserService, { UserProfile, getGenderDisplay } from '../../services/UserService';
-import profileService, { PublicProfileDto } from '../../services/ProfileService';
+import profileService, { PublicProfileDto, shareProfile } from '../../services/ProfileService';
 import RecipeService, { MyRecipe as Recipe } from '../../services/RecipeService';
 import AuthService from '../../services/AuthService';
+import { ReportTargetType } from '../../services/ReportService';
 
 import { localStyles, BRAND_COLOR_EXPORT } from './ProfileScreenStyles';
 
@@ -45,6 +46,7 @@ const initialUserData: UserProfile | PublicProfileDto = {
     isFollowing: false,
     address: null,
     bio: null,
+    userName:'',
 };
 
 interface InfoRowProps {
@@ -104,6 +106,7 @@ const ProfileScreen: React.FC = () => {
     const [isFollowing, setIsFollowing] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
     const [isReportVisible, setReportVisible] = useState(false);
+    const [isSharing, setIsSharing] = useState(false);
 
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [isLoadingRecipes, setIsLoadingRecipes] = useState(false);
@@ -126,7 +129,6 @@ const ProfileScreen: React.FC = () => {
             }
             setError(null);
         } catch (err) {
-            // console.error('API Error:', err);
             setError('Không thể tải hồ sơ');
         }
     }, [isOwnProfile, username]);
@@ -150,10 +152,14 @@ const ProfileScreen: React.FC = () => {
                     });
                 }
             } else {
-                response = await RecipeService.getRecipes({
-                    page: currentPage,
-                    pageSize: pageSize,
-                });
+                // ✅ SỬA: Gọi getRecipesByUserName với userName từ userData
+                response = await RecipeService.getRecipesByUserName(
+                    userData.userName,
+                    {
+                        pageNumber: currentPage,
+                        pageSize: pageSize,
+                    }
+                );
             }
 
             if (response && response.items) {
@@ -164,12 +170,11 @@ const ProfileScreen: React.FC = () => {
                 setTotalRecipes(0);
             }
         } catch (err) {
-            // console.error(err);
             setRecipes([]);
         } finally {
             setIsLoadingRecipes(false);
         }
-    }, [currentPage, pageSize, searchQuery, activeTab, isOwnProfile]);
+    }, [currentPage, pageSize, searchQuery, activeTab, isOwnProfile, userData.userName]);
 
     const handleFollowToggle = async () => {
         if (isOwnProfile || !userData.id) return;
@@ -197,17 +202,23 @@ const ProfileScreen: React.FC = () => {
         }
     };
 
-    const handleSubmitReport = async (reason: string) => {
+    const handleShareProfile = async () => {
+        if (isSharing) return;
+        
+        setIsSharing(true);
+        
         try {
-            // console.log('Sending report for user:', userData.id, 'Reason:', reason);
-            // TODO: await profileService.reportUser(userData.id, reason);
-            setReportVisible(false);
-            setTimeout(() => {
-                Alert.alert('Đã gửi', 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét sớm.');
-            }, 300);
+            const profileUsername = isOwnProfile 
+                ? (userData as UserProfile).userName 
+                : (userData as PublicProfileDto).userName;
+            
+            const fullName = `${userData.firstName} ${userData.lastName}`.trim();
+            
+            await shareProfile(profileUsername, fullName);
         } catch (error) {
-            // console.error(error);
-            Alert.alert('Lỗi', 'Có lỗi xảy ra khi gửi báo cáo.');
+            // Lỗi đã được handle trong hàm shareProfile
+        } finally {
+            setIsSharing(false);
         }
     };
 
@@ -220,9 +231,12 @@ const ProfileScreen: React.FC = () => {
         loadProfile();
     }, [fetchUserProfile]);
 
+    // ✅ SỬA: Chỉ gọi fetchRecipes khi đã có userData.userName (với profile người khác)
     useEffect(() => {
-        fetchRecipes();
-    }, [fetchRecipes]);
+        if (isOwnProfile || userData.userName) {
+            fetchRecipes();
+        }
+    }, [fetchRecipes, isOwnProfile, userData.userName]);
 
     useEffect(() => {
         if (isFocused) {
@@ -322,7 +336,7 @@ const ProfileScreen: React.FC = () => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[BRAND_COLOR]} />
                 }
             >
-                {/* Header Section - New Design */}
+                {/* Header Section */}
                 <View style={localStyles.headerSection}>
                     <View style={localStyles.headerBackground}>
                         <View style={localStyles.decorativeCircle1} />
@@ -398,10 +412,10 @@ const ProfileScreen: React.FC = () => {
 
                         <View style={localStyles.statItem}>
                             <View style={localStyles.statIconBg}>
-                                <MaterialIcon name="star" size={18} color="#FFB800" />
+                                <MaterialIcon name="chef-hat" size={18} color="#10B981" />
                             </View>
-                            <Text style={localStyles.statValue}>4.5</Text>
-                            <Text style={localStyles.statLabel}>Đánh giá</Text>
+                            <Text style={localStyles.statValue}>{totalRecipes}</Text>
+                            <Text style={localStyles.statLabel}>Món ăn đã đăng</Text>
                         </View>
                     </View>
 
@@ -413,9 +427,19 @@ const ProfileScreen: React.FC = () => {
                                     <MaterialIcon name="pencil" size={18} color="#FFFFFF" />
                                     <Text style={localStyles.editButtonText}>Chỉnh sửa</Text>
                                 </TouchableOpacity>
-                                <TouchableOpacity style={localStyles.shareButton}>
-                                    <MaterialIcon name="share-variant" size={18} color={BRAND_COLOR} />
-                                    <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
+                                <TouchableOpacity 
+                                    style={localStyles.shareButton} 
+                                    onPress={handleShareProfile}
+                                    disabled={isSharing}
+                                >
+                                    {isSharing ? (
+                                        <ActivityIndicator size="small" color={BRAND_COLOR} />
+                                    ) : (
+                                        <>
+                                            <MaterialIcon name="share-variant" size={18} color={BRAND_COLOR} />
+                                            <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
+                                        </>
+                                    )}
                                 </TouchableOpacity>
                                 <TouchableOpacity style={localStyles.logoutButton} onPress={handleLogout}>
                                     <MaterialIcon name="logout" size={18} color="#FF5252" />
@@ -443,9 +467,19 @@ const ProfileScreen: React.FC = () => {
                                         </>
                                     )}
                                 </TouchableOpacity>
-                                <TouchableOpacity style={localStyles.shareButton}>
-                                    <MaterialIcon name="share-variant" size={18} color={BRAND_COLOR} />
-                                    <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
+                                <TouchableOpacity 
+                                    style={localStyles.shareButton}
+                                    onPress={handleShareProfile}
+                                    disabled={isSharing}
+                                >
+                                    {isSharing ? (
+                                        <ActivityIndicator size="small" color={BRAND_COLOR} />
+                                    ) : (
+                                        <>
+                                            <MaterialIcon name="share-variant" size={18} color={BRAND_COLOR} />
+                                            <Text style={localStyles.shareButtonText}>Chia sẻ</Text>
+                                        </>
+                                    )}
                                 </TouchableOpacity>
                                 <TouchableOpacity style={localStyles.reportButton} onPress={() => setReportVisible(true)}>
                                     <MaterialIcon name="flag" size={18} color="#F59E0B" />
@@ -502,21 +536,24 @@ const ProfileScreen: React.FC = () => {
                             </View>
                         )}
 
-                        <View style={localStyles.searchBarContainer}>
-                            <Ionicons name="search" size={18} color="#9CA3AF" />
-                            <TextInput
-                                placeholder={isOwnProfile ? (activeTab === 'my_recipes' ? "Tìm của tôi..." : "Tìm đã lưu...") : "Tìm kiếm..."}
-                                style={localStyles.searchInput}
-                                placeholderTextColor="#9CA3AF"
-                                value={searchQuery}
-                                onChangeText={handleSearch}
-                            />
-                            {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')}>
-                                    <Ionicons name="close-circle" size={18} color="#9CA3AF" />
-                                </TouchableOpacity>
-                            )}
-                        </View>
+                        {/* ✅ SỬA: Ẩn search bar cho profile người khác vì API không hỗ trợ search */}
+                        {isOwnProfile && (
+                            <View style={localStyles.searchBarContainer}>
+                                <Ionicons name="search" size={18} color="#9CA3AF" />
+                                <TextInput
+                                    placeholder={activeTab === 'my_recipes' ? "Tìm của tôi..." : "Tìm đã lưu..."}
+                                    style={localStyles.searchInput}
+                                    placeholderTextColor="#9CA3AF"
+                                    value={searchQuery}
+                                    onChangeText={handleSearch}
+                                />
+                                {searchQuery.length > 0 && (
+                                    <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                        <Ionicons name="close-circle" size={18} color="#9CA3AF" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        )}
 
                         {isLoadingRecipes ? (
                             <ActivityIndicator size="small" color={BRAND_COLOR} style={{ marginVertical: 30 }} />
@@ -559,12 +596,16 @@ const ProfileScreen: React.FC = () => {
                 </View>
             </ScrollView>
 
-            {/* <ReportDialog
+            <ReportDialog
                 visible={isReportVisible}
                 reportedUser={fullName}
+                targetId={userData.id}
+                targetType={ReportTargetType.USER}
                 onClose={() => setReportVisible(false)}
-                onSubmit={handleSubmitReport}
-            /> */}
+                onSuccess={() => {
+                    console.log('Báo cáo người dùng thành công');
+                }}
+            />
         </View>
     );
 };

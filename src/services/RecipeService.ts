@@ -5,7 +5,7 @@ import { Share, Alert } from 'react-native';
 // CONSTANTS
 // ============================================
 const BASE_URL = `${API_BASE_URL}/api`;
-const WEB_URL = `${API_BASE_URL}`;
+const WEB_URL = 'https://sep-490-ftcdhmm-ui.vercel.app';
 const REQUEST_TIMEOUT = 30000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
