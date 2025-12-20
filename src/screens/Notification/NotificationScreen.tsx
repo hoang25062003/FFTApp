@@ -27,7 +27,7 @@ const NotificationScreen = () => {
             const data = await NotificationService.getMyNotifications();
             setNotifications(data);
         } catch (error) {
-            console.error('Lỗi API notifications:', error);
+            // console.error('Lỗi API notifications:', error);
         } finally {
             setLoading(false);
             setRefreshing(false);
@@ -46,7 +46,7 @@ const NotificationScreen = () => {
                     prev.map(n => n.id === item.id ? { ...n, isRead: true } : n)
                 );
             } catch (err) {
-                console.error("Lỗi mark-as-read:", err);
+                // console.error("Lỗi mark-as-read:", err);
             }
         }
         // Logic điều hướng (Navigation) dựa trên item.targetId sẽ thêm ở đây
@@ -58,7 +58,7 @@ const NotificationScreen = () => {
             // await NotificationService.markAllAsRead();
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
         } catch (err) {
-            console.error("Lỗi mark all as read:", err);
+            // console.error("Lỗi mark all as read:", err);
         }
     };
 

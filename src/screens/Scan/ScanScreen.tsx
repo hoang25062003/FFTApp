@@ -101,7 +101,7 @@ const ScanScreen: React.FC = () => {
             }
 
         } catch (error: any) {
-            console.error("Lỗi khi scan:", error);
+            // console.error("Lỗi khi scan:", error);
             const message = error.message || 'Đã xảy ra lỗi không xác định.';
             setErrorText(message);
             Alert.alert("Lỗi phân tích", message);

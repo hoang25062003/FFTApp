@@ -55,16 +55,16 @@ export interface PaginatedRatingResponse {
 
 const validateRating = (score: number): void => {
   if (!Number.isInteger(score) || score < 1 || score > 5) {
-    throw new Error('Score must be an integer between 1 and 5');
+    throw new Error('Score phải là số nguyên từ 1 đến 5');
   }
 };
 
 const validateFeedback = (feedback: string): void => {
   if (!feedback || feedback.trim().length === 0) {
-    throw new Error('Feedback is required');
+    throw new Error('Feedback không được để trống');
   }
   if (feedback.length > 256) {
-    throw new Error('Feedback must not exceed 256 characters');
+    throw new Error('Feedback không được quá 256 ký tự');
   }
 };
 
@@ -94,6 +94,8 @@ class RatingHttpClient {
   private async fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+   
+
     try {
       const response = await fetch(url, { ...options, signal: controller.signal });
       clearTimeout(timeoutId);
@@ -121,7 +123,11 @@ class RatingHttpClient {
 
     if (includeAuth) {
       const token = await TokenManager.getToken();
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        console.warn(`⚠️ [Auth Warning]: Endpoint ${endpoint} cần token nhưng không tìm thấy.`);
+      }
     }
 
     try {
@@ -132,8 +138,10 @@ class RatingHttpClient {
       const responseData = await response.json().catch(() => ({}));
 
       if (!response.ok) {
+        console.error(`❌ [API Error Status]: ${response.status} tại ${endpoint}`);
         throw this.handleError(response, responseData);
       }
+
 
       return responseData as T;
     } catch (error) {
@@ -165,8 +173,8 @@ const ratingHttpClient = new RatingHttpClient(BASE_URL);
 // ============================================
 
 /**
- * Get average rating (score) for a recipe
- * Public endpoint - no authentication required
+ * Lấy điểm đánh giá trung bình (Score)
+ * Đã cập nhật: includeAuth = true vì Swagger yêu cầu Authorize
  */
 export async function getAverageRating(recipeId: string): Promise<AverageRatingResponse> {
   if (!recipeId) throw new Error('Recipe ID is required');
@@ -174,13 +182,12 @@ export async function getAverageRating(recipeId: string): Promise<AverageRatingR
   return await ratingHttpClient.request<AverageRatingResponse>(
     `/recipe/${recipeId}/score`,
     { method: 'GET' },
-    false
+    true // CHỈNH SỬA: Chuyển thành true để gửi kèm Token
   );
 }
 
 /**
- * Add or update rating for a recipe
- * Requires authentication
+ * Thêm hoặc cập nhật đánh giá
  */
 export async function rateRecipe(
   recipeId: string,
@@ -202,9 +209,7 @@ export async function rateRecipe(
 }
 
 /**
- * Delete rating
- * Requires authentication
- * Note: Use ratingId (not recipeId) to delete specific rating
+ * Xóa đánh giá
  */
 export async function deleteRating(ratingId: string): Promise<void> {
   if (!ratingId) throw new Error('Rating ID is required');
@@ -217,9 +222,7 @@ export async function deleteRating(ratingId: string): Promise<void> {
 }
 
 /**
- * Get recipe ratings with pagination
- * Requires authentication to determine isOwner flag
- * NEW: Added pagination support matching web API
+ * Lấy danh sách đánh giá phân trang
  */
 export async function getRecipeRatings(
   recipeId: string,
@@ -233,8 +236,6 @@ export async function getRecipeRatings(
   });
 
   const endpoint = `/recipe/${recipeId}/rating?${queryParams.toString()}`;
-  
-  console.log('📡 Calling API:', `${BASE_URL}${endpoint}`);
 
   const result = await ratingHttpClient.request<PaginatedRatingResponse>(
     endpoint,
@@ -242,10 +243,9 @@ export async function getRecipeRatings(
     true
   );
 
-  // Calculate totalPages if not provided by backend
   return {
     ...result,
-    totalPages: result.totalPages || Math.ceil(result.totalCount / result.pageSize),
+    totalPages: result.totalPages || Math.ceil(result.totalCount / (result.pageSize || 12)),
   };
 }
 
@@ -257,5 +257,5 @@ export default {
   getAverageRating,
   rateRecipe,
   deleteRating,
-  getRecipeRatings, // NEW
+  getRecipeRatings,
 };

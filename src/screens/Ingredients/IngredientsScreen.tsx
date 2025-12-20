@@ -51,7 +51,7 @@ const IngredientsScreen: React.FC = () => {
       const response = await IngredientService.getIngredients(1, 50);
       setIngredients(response.items || []);
     } catch (error) {
-      console.error('Error loading ingredients:', error);
+      // console.error('Error loading ingredients:', error);
     } finally {
       setIsLoading(false);
     }
@@ -63,7 +63,7 @@ const IngredientsScreen: React.FC = () => {
       const data = await IngredientCategoryService.getIngredientCategories();
       setCategories(data || []);
     } catch (error) {
-      console.error('Error loading categories:', error);
+      // console.error('Error loading categories:', error);
     } finally {
       setIsLoadingCategories(false);
     }

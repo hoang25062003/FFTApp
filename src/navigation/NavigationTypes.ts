@@ -16,6 +16,7 @@ export type RootStackParamList = {
     AuthFlow: undefined; 
     MainAppTabs: undefined;
     CreateRecipe: undefined;
+    EditRecipe: { recipeId: string };
     DietRestrictionFlow: undefined;
     ViewRecipeScreen: { recipeId: string };
     ProfileScreen: { username: string };
@@ -34,6 +35,7 @@ export type ProfileStackParamList = {
 export type HealthGoalStackParamList = {
     HealthGoalMain: undefined;
     HealthGoalCreate: undefined;
+    EditHealthGoal: { goalId: string };
 };
 
 export type ScanStackParamList = {

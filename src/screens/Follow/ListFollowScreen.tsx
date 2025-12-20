@@ -50,7 +50,7 @@ const ListFollowScreen: React.FC<ListFollowScreenProps> = ({ route, navigation }
 
       if (activeTab === 'Followers') {
         const followersData = await profileService.getFollowers();
-        console.log("📋 Followers raw data:", followersData);
+        // console.log("📋 Followers raw data:", followersData);
         
         // Fetch PublicProfile cho từng user để lấy isFollowing
         const followersWithStatus = await Promise.all(
@@ -62,7 +62,7 @@ const ListFollowScreen: React.FC<ListFollowScreenProps> = ({ route, navigation }
                 isFollowing: profile.isFollowing
               };
             } catch (error) {
-              console.log(`❌ Error fetching profile for ${user.userName}:`, error);
+              // console.log(`❌ Error fetching profile for ${user.userName}:`, error);
               return {
                 ...user,
                 isFollowing: false // Fallback nếu không fetch được
@@ -74,7 +74,7 @@ const ListFollowScreen: React.FC<ListFollowScreenProps> = ({ route, navigation }
         result = followersWithStatus;
       } else {
         const followingData = await profileService.getFollowing();
-        console.log("📋 Following raw data:", followingData);
+        // console.log("📋 Following raw data:", followingData);
         
         // Tất cả users trong "Following" đều là người mình đang follow
         result = followingData.map(user => ({
@@ -83,10 +83,10 @@ const ListFollowScreen: React.FC<ListFollowScreenProps> = ({ route, navigation }
         }));
       }
 
-      console.log("✅ Final processed data:", result);
+      // console.log("✅ Final processed data:", result);
       setUserList(result);
     } catch (error: any) {
-      console.log("❌ Fetch list error:", error);
+      // console.log("❌ Fetch list error:", error);
       Alert.alert('Lỗi', 'Không thể tải danh sách người dùng');
     } finally {
       setLoading(false);
@@ -125,7 +125,7 @@ const ListFollowScreen: React.FC<ListFollowScreenProps> = ({ route, navigation }
         setUserList(prev => prev.filter(u => u.id !== userId));
       }
     } catch (error: any) {
-      console.log("❌ Follow error:", error);
+      // console.log("❌ Follow error:", error);
       Alert.alert('Lỗi', 'Không thể thực hiện thao tác');
     } finally {
       setProcessingId(null);
@@ -137,7 +137,7 @@ const ListFollowScreen: React.FC<ListFollowScreenProps> = ({ route, navigation }
   const renderUserItem = ({ item }: { item: UserFollowerDtoWithFollow }) => {
     const displayName = item.fullName || `${item.firstName} ${item.lastName}`.trim();
     
-    console.log(`👤 Rendering user: ${displayName}, isFollowing: ${item.isFollowing}`);
+    // console.log(`👤 Rendering user: ${displayName}, isFollowing: ${item.isFollowing}`);
     
     return (
       <View style={followStyles.userCard}>

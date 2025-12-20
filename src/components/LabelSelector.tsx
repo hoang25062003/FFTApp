@@ -225,15 +225,7 @@ const LabelSelector: React.FC<LabelSelectorProps> = ({
             />
 
             {/* Footer */}
-            <View style={styles.modalFooter}>
-              <TouchableOpacity 
-                style={styles.doneButton}
-                onPress={handleCloseDropdown}
-              >
-                <Icon name="check-circle" size={20} color="#FFFFFF" />
-                <Text style={styles.doneButtonText}>Xong</Text>
-              </TouchableOpacity>
-            </View>
+
           </View>
         </View>
       </Modal>

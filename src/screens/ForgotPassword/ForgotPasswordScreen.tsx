@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -8,81 +8,26 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { ForgotPasswordScreenNavigationProps } from '../../navigation/NavigationTypes';
-import { AuthRoutes } from '../../navigation/RouteNames';
 import { styles } from './ForgotPasswordScreenStyles';
-import { forgotPassword, ApiException } from '../../services/AuthService';
+import { useForgotPassword } from '../../hooks/useForgotPassword';
+
+const BRAND_COLOR = '#8BC34A';
 
 type Props = ForgotPasswordScreenNavigationProps;
 
 const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
-  const BRAND_COLOR = '#8BC34A';
-
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [emailError, setEmailError] = useState('');
-
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
-
-  const handleSendCode = async () => {
-    if (isLoading) return;
-
-    // Validate email
-    if (!email.trim()) {
-      setEmailError('Vui lòng nhập email');
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      setEmailError('Email không hợp lệ');
-      return;
-    }
-
-    setIsLoading(true);
-    setEmailError('');
-
-    try {
-      // Call API to send reset code
-      await forgotPassword({ email: email.trim() });
-      
-      // Navigate to verify code screen
-      navigation.navigate(AuthRoutes.VerifyCode, { email: email.trim() });
-      
-      // Show success message
-      Alert.alert(
-        'Thành công',
-        'Mã xác minh đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.',
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      if (error instanceof ApiException) {
-        // Handle specific API errors
-        if (error.status === 404) {
-          setEmailError('Email không tồn tại trong hệ thống');
-        } else if (error.status === 429) {
-          setEmailError('Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau');
-        } else {
-          setEmailError(error.message || 'Không thể gửi mã. Vui lòng thử lại sau');
-        }
-      } else {
-        setEmailError('Lỗi kết nối. Vui lòng kiểm tra internet và thử lại');
-      }
-      console.error('Forgot password error:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleBackToLogin = () => {
-    navigation.navigate(AuthRoutes.Login);
-  };
+  const {
+    email,
+    isLoading,
+    emailError,
+    handleEmailChange,
+    handleSendCode,
+    handleBackToLogin,
+  } = useForgotPassword(navigation);
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -112,29 +57,6 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressStep}>
-              <View style={styles.progressCircleActive}>
-                <Icon name="email" size={20} color="#FFFFFF" />
-              </View>
-              <Text style={styles.progressStepNumber}>1</Text>
-            </View>
-            <View style={styles.progressLine} />
-            <View style={styles.progressStep}>
-              <View style={styles.progressCircle}>
-                <Text style={styles.progressCircleText}>2</Text>
-              </View>
-            </View>
-            <View style={styles.progressLine} />
-            <View style={styles.progressStep}>
-              <View style={styles.progressCircle}>
-                <Icon name="lock" size={20} color="#9CA3AF" />
-              </View>
-              <Text style={styles.progressStepNumber}>3</Text>
-            </View>
-          </View>
-
           {/* Form Card */}
           <View style={styles.formCard}>
             <View style={styles.cardHeader}>
@@ -159,10 +81,7 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
                   placeholder="example@gmail.com"
                   placeholderTextColor="#9CA3AF"
                   value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    if (emailError) setEmailError('');
-                  }}
+                  onChangeText={handleEmailChange}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}

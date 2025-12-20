@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,166 +6,50 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { register } from '../../services/AuthService';
 import { styles } from './RegisterScreenStyles';
-import { AuthRoutes } from '../../navigation/RouteNames';
+import { useRegister } from '../../hooks/useRegister';
 
-type InputField = 'firstName' | 'lastName' | 'email' | 'password' | 'rePassword' | 'dateOfBirth' | null;
+const BRAND_COLOR = '#8BC34A';
+const ERROR_COLOR = '#EF4444';
 
 interface RegisterScreenProps {
   navigation: any;
 }
 
 const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
-  const BRAND_COLOR = '#8BC34A';
-  const ERROR_COLOR = '#EF4444';
+  const {
+    scrollViewRef,
+    firstNameRef,
+    lastNameRef,
+    emailRef,
+    passwordRef,
+    rePasswordRef,
+    formData,
+    errors,
+    showPassword,
+    showRePassword,
+    isLoading,
+    focusedInput,
+    showDatePicker,
+    dateObject,
+    getDateLimits,
+    setShowPassword,
+    setShowRePassword,
+    setShowDatePicker,
+    updateField,
+    handleFocus,
+    handleBlur,
+    onDateChange,
+    handleRegister,
+  } = useRegister(navigation);
 
-  // Refs để điều khiển focus và cuộn trang
-  const scrollViewRef = useRef<ScrollView>(null);
-  const firstNameRef = useRef<TextInput>(null);
-  const lastNameRef = useRef<TextInput>(null);
-  const emailRef = useRef<TextInput>(null);
-  const passwordRef = useRef<TextInput>(null);
-  const rePasswordRef = useRef<TextInput>(null);
-
-  // State dữ liệu form
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [rePassword, setRePassword] = useState('');
-  const [dateOfBirth, setDateOfBirth] = useState('');
-  const [gender, setGender] = useState<'Male' | 'Female'>('Male');
-
-  // State quản lý lỗi và UI
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showPassword, setShowPassword] = useState(false);
-  const [showRePassword, setShowRePassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [focusedInput, setFocusedInput] = useState<InputField>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [dateObject, setDateObject] = useState(new Date());
-
-  const getDateLimits = () => {
-    const today = new Date();
-    const maxDate = new Date(today.getFullYear() - 13, today.getMonth(), today.getDate());
-    const minDate = new Date(today.getFullYear() - 120, today.getMonth(), today.getDate());
-    return { minDate, maxDate };
-  };
-
-  const handleFocus = (inputName: InputField) => {
-    setFocusedInput(inputName);
-    if (inputName && errors[inputName]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[inputName];
-        return newErrors;
-      });
-    }
-  };
-
-  const handleBlur = () => setFocusedInput(null);
-
-  const onDateChange = (event: any, selectedDate?: Date) => {
-    setShowDatePicker(false);
-    if (selectedDate) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors['dateOfBirth'];
-        return newErrors;
-      });
-      setDateObject(selectedDate);
-      const day = selectedDate.getDate().toString().padStart(2, '0');
-      const month = (selectedDate.getMonth() + 1).toString().padStart(2, '0');
-      const year = selectedDate.getFullYear();
-      setDateOfBirth(`${day}/${month}/${year}`);
-    }
-    handleBlur();
-  };
-
-  const validateForm = () => {
-    let newErrors: Record<string, string> = {};
-
-    // 1. Validate Họ và Tên
-    if (!firstName.trim()) newErrors.firstName = "Bạn chưa điền Họ.";
-    if (!lastName.trim()) newErrors.lastName = "Bạn chưa điền Tên.";
-    
-    // 2. Validate Email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email.trim()) {
-      newErrors.email = "Vui lòng nhập Email";
-    } else if (!emailRegex.test(email)) {
-      newErrors.email = "Địa chỉ email không đúng định dạng.";
-    }
-
-    // 3. Validate Mật khẩu (Mạnh: 8-100 ký tự, có Hoa, Thường, Số, Ký tự đặc biệt)
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,100}$/;
-    if (!password) {
-      newErrors.password = "Vui lòng đặt mật khẩu.";
-    } else if (!passwordRegex.test(password)) {
-      newErrors.password = "Mật khẩu cần từ 8-100 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.";
-    }
-
-    // 4. Validate Xác nhận mật khẩu
-    if (!rePassword) {
-      newErrors.rePassword = "Hãy xác nhận lại mật khẩu.";
-    } else if (rePassword !== password) {
-      newErrors.rePassword = "Mật khẩu xác nhận không trùng khớp.";
-    }
-
-    // 5. Validate Ngày sinh
-    if (!dateOfBirth) newErrors.dateOfBirth = "Hãy chọn ngày sinh của bạn.";
-
-    setErrors(newErrors);
-
-    // Tập trung trỏ đến lỗi đầu tiên (Focus + Scroll)
-    if (Object.keys(newErrors).length > 0) {
-      if (newErrors.firstName) firstNameRef.current?.focus();
-      else if (newErrors.lastName) lastNameRef.current?.focus();
-      else if (newErrors.email) emailRef.current?.focus();
-      else if (newErrors.password) passwordRef.current?.focus();
-      else if (newErrors.rePassword) rePasswordRef.current?.focus();
-      else if (newErrors.dateOfBirth) scrollViewRef.current?.scrollToEnd();
-      
-      return false;
-    }
-    return true;
-  };
-
-  const handleRegister = async () => {
-    if (!validateForm()) return;
-
-    const parts = dateOfBirth.split('/');
-    const formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-
-    const payload = {
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      email: email.trim(),
-      password,
-      rePassword,
-      dateOfBirth: formattedDate,
-      gender,
-    };
-
-    setIsLoading(true);
-    try {
-      await register(payload);
-      Alert.alert('Đăng ký thành công', 'Vui lòng kiểm tra email của bạn để lấy mã OTP.');
-      navigation.navigate(AuthRoutes.VerifyEmailOtp, { email: email.trim() });
-    } catch (error: any) {
-      Alert.alert('Đăng ký thất bại', error.message || 'Đã xảy ra lỗi không xác định.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { minDate, maxDate } = getDateLimits();
 
   const RenderError = ({ field }: { field: string }) => (
     errors[field] ? (
@@ -174,8 +58,6 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
       </Text>
     ) : null
   );
-
-  const { minDate, maxDate } = getDateLimits();
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -225,12 +107,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   <TextInput
                     ref={firstNameRef}
                     style={styles.input}
-                    value={firstName}
-                    onChangeText={setFirstName}
+                    value={formData.firstName}
+                    onChangeText={(text) => updateField('firstName', text)}
                     placeholder="Họ"
                     onFocus={() => handleFocus('firstName')}
                     onBlur={handleBlur}
                     editable={!isLoading}
+                    // Auto-focus logic
+                    returnKeyType="next"
+                    onSubmitEditing={() => lastNameRef.current?.focus()}
+                    blurOnSubmit={false}
                   />
                 </View>
                 <RenderError field="firstName" />
@@ -251,12 +137,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   <TextInput
                     ref={lastNameRef}
                     style={styles.input}
-                    value={lastName}
-                    onChangeText={setLastName}
+                    value={formData.lastName}
+                    onChangeText={(text) => updateField('lastName', text)}
                     placeholder="Tên"
                     onFocus={() => handleFocus('lastName')}
                     onBlur={handleBlur}
                     editable={!isLoading}
+                    // Auto-focus logic
+                    returnKeyType="next"
+                    onSubmitEditing={() => emailRef.current?.focus()}
+                    blurOnSubmit={false}
                   />
                 </View>
                 <RenderError field="lastName" />
@@ -279,14 +169,18 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 <TextInput
                   ref={emailRef}
                   style={styles.input}
-                  value={email}
-                  onChangeText={setEmail}
+                  value={formData.email}
+                  onChangeText={(text) => updateField('email', text)}
                   placeholder="example@email.com"
                   keyboardType="email-address"
                   autoCapitalize="none"
                   onFocus={() => handleFocus('email')}
                   onBlur={handleBlur}
                   editable={!isLoading}
+                  // Auto-focus logic
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
               </View>
               <RenderError field="email" />
@@ -308,13 +202,17 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 <TextInput
                   ref={passwordRef}
                   style={styles.input}
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="8-100 ký tự, đủ loại ký tự"
+                  value={formData.password}
+                  onChangeText={(text) => updateField('password', text)}
+                  placeholder="8-100 ký tự"
                   secureTextEntry={!showPassword}
                   onFocus={() => handleFocus('password')}
                   onBlur={handleBlur}
                   editable={!isLoading}
+                  // Auto-focus logic
+                  returnKeyType="next"
+                  onSubmitEditing={() => rePasswordRef.current?.focus()}
+                  blurOnSubmit={false}
                 />
                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                   <Icon name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#6B7280" />
@@ -339,13 +237,16 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                 <TextInput
                   ref={rePasswordRef}
                   style={styles.input}
-                  value={rePassword}
-                  onChangeText={setRePassword}
+                  value={formData.rePassword}
+                  onChangeText={(text) => updateField('rePassword', text)}
                   placeholder="Nhập lại mật khẩu"
                   secureTextEntry={!showRePassword}
                   onFocus={() => handleFocus('rePassword')}
                   onBlur={handleBlur}
                   editable={!isLoading}
+                  // Auto-focus logic: Pressing Done hides keyboard or triggers next action
+                  returnKeyType="done"
+                  onSubmitEditing={() => setShowDatePicker(true)}
                 />
                 <TouchableOpacity onPress={() => setShowRePassword(!showRePassword)}>
                   <Icon name={showRePassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#6B7280" />
@@ -373,7 +274,7 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
                   />
                   <TextInput
                     style={styles.input}
-                    value={dateOfBirth}
+                    value={formData.dateOfBirth}
                     placeholder="DD/MM/YYYY"
                     editable={false}
                     pointerEvents="none"
@@ -398,20 +299,20 @@ const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
               <Text style={styles.label}>Giới tính <Text style={styles.required}>*</Text></Text>
               <View style={styles.genderContainer}>
                 <TouchableOpacity
-                  style={[styles.genderButton, gender === 'Female' && styles.genderButtonActive]}
-                  onPress={() => setGender('Female')}
+                  style={[styles.genderButton, formData.gender === 'Female' && styles.genderButtonActive]}
+                  onPress={() => updateField('gender', 'Female')}
                   disabled={isLoading}
                 >
-                  <Icon name="gender-female" size={20} color={gender === 'Female' ? '#FFFFFF' : '#6B7280'} />
-                  <Text style={[styles.genderButtonText, gender === 'Female' && styles.genderButtonTextActive]}>Nữ</Text>
+                  <Icon name="gender-female" size={20} color={formData.gender === 'Female' ? '#FFFFFF' : '#6B7280'} />
+                  <Text style={[styles.genderButtonText, formData.gender === 'Female' && styles.genderButtonTextActive]}>Nữ</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.genderButton, gender === 'Male' && styles.genderButtonActive]}
-                  onPress={() => setGender('Male')}
+                  style={[styles.genderButton, formData.gender === 'Male' && styles.genderButtonActive]}
+                  onPress={() => updateField('gender', 'Male')}
                   disabled={isLoading}
                 >
-                  <Icon name="gender-male" size={20} color={gender === 'Male' ? '#FFFFFF' : '#6B7280'} />
-                  <Text style={[styles.genderButtonText, gender === 'Male' && styles.genderButtonTextActive]}>Nam</Text>
+                  <Icon name="gender-male" size={20} color={formData.gender === 'Male' ? '#FFFFFF' : '#6B7280'} />
+                  <Text style={[styles.genderButtonText, formData.gender === 'Male' && styles.genderButtonTextActive]}>Nam</Text>
                 </TouchableOpacity>
               </View>
             </View>

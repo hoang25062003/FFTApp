@@ -11,6 +11,8 @@ const REQUEST_TIMEOUT = 30000; // 30 seconds
 // TYPES
 // ============================================
 
+export type UserRole = 'USER' | 'ADMIN' | 'MODERATOR';
+
 export type UserProfile = {
     id: string;
     firstName: string;
@@ -23,7 +25,8 @@ export type UserProfile = {
     isFollowing: boolean;
     address: string | null;
     bio: string | null;
-    dateOfBirth: string | null; 
+    dateOfBirth: string | null;
+    role?: UserRole; // Role của user
 };
 
 export type UpdateProfilePayload = {
@@ -67,6 +70,114 @@ export function getGenderDisplay(gender: string | null | undefined): string {
         case 'FEMALE': return 'Nữ';
         default: return 'Không xác định'; 
     }
+}
+
+export function getRoleDisplay(role: UserRole | string | null | undefined): string {
+    if (!role) return 'Người dùng';
+    const upperCaseRole = role.toUpperCase();
+    switch (upperCaseRole) {
+        case 'ADMIN': return 'Quản trị viên';
+        case 'MODERATOR': return 'Điều hành viên';
+        case 'USER': return 'Người dùng';
+        default: return 'Người dùng';
+    }
+}
+
+// ============================================
+// ROLE CHECK FUNCTIONS
+// ============================================
+
+/**
+ * Kiểm tra xem user có phải là Admin không
+ */
+export function isAdmin(profile: UserProfile | null): boolean {
+    if (!profile || !profile.role) return false;
+    return profile.role.toUpperCase() === 'ADMIN';
+}
+
+/**
+ * Kiểm tra xem user có phải là Moderator không
+ */
+export function isModerator(profile: UserProfile | null): boolean {
+    if (!profile || !profile.role) return false;
+    return profile.role.toUpperCase() === 'MODERATOR';
+}
+
+/**
+ * Kiểm tra xem user có quyền quản lý (Admin hoặc Moderator) không
+ */
+export function isAdminOrModerator(profile: UserProfile | null): boolean {
+    return isAdmin(profile) || isModerator(profile);
+}
+
+/**
+ * Kiểm tra xem user có quyền xóa comment không
+ * @param profile - User profile
+ * @param isRecipeOwner - Có phải chủ công thức không
+ * @param isCommentOwner - Có phải chủ comment không
+ */
+export function canDeleteComment(
+    profile: UserProfile | null,
+    isRecipeOwner: boolean = false,
+    isCommentOwner: boolean = false
+): boolean {
+    // User có thể xóa comment của chính mình
+    if (isCommentOwner) return true;
+    
+    // Chủ công thức có thể xóa bất kỳ comment nào trong công thức của mình
+    if (isRecipeOwner) return true;
+    
+    // Admin/Moderator có thể xóa bất kỳ comment nào
+    return isAdminOrModerator(profile);
+}
+
+/**
+ * Kiểm tra xem user có quyền xóa rating không
+ * @param profile - User profile
+ * @param isRecipeOwner - Có phải chủ công thức không
+ * @param isRatingOwner - Có phải chủ rating không
+ */
+export function canDeleteRating(
+    profile: UserProfile | null,
+    isRecipeOwner: boolean = false,
+    isRatingOwner: boolean = false
+): boolean {
+    // User có thể xóa rating của chính mình
+    if (isRatingOwner) return true;
+    
+    // Chủ công thức có thể xóa rating trong công thức của mình
+    if (isRecipeOwner) return true;
+    
+    // Admin/Moderator có thể xóa bất kỳ rating nào
+    return isAdminOrModerator(profile);
+}
+
+/**
+ * Kiểm tra xem user có quyền chỉnh sửa recipe không
+ */
+export function canEditRecipe(
+    profile: UserProfile | null,
+    isRecipeOwner: boolean = false
+): boolean {
+    // Chủ công thức có thể chỉnh sửa
+    if (isRecipeOwner) return true;
+    
+    // Admin có thể chỉnh sửa bất kỳ công thức nào
+    return isAdmin(profile);
+}
+
+/**
+ * Kiểm tra xem user có quyền xóa recipe không
+ */
+export function canDeleteRecipe(
+    profile: UserProfile | null,
+    isRecipeOwner: boolean = false
+): boolean {
+    // Chủ công thức có thể xóa
+    if (isRecipeOwner) return true;
+    
+    // Admin có thể xóa bất kỳ công thức nào
+    return isAdmin(profile);
 }
 
 // ============================================
@@ -221,5 +332,13 @@ export async function updateUserProfile(data: FormData | UpdateProfilePayload): 
 export default {
     getUserProfile,
     updateUserProfile,
-    getGenderDisplay, 
+    getGenderDisplay,
+    getRoleDisplay,
+    isAdmin,
+    isModerator,
+    isAdminOrModerator,
+    canDeleteComment,
+    canDeleteRating,
+    canEditRecipe,
+    canDeleteRecipe,
 };

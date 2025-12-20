@@ -59,7 +59,7 @@ const ViewHealthMetricScreen: React.FC = () => {
         setHistoryMetrics([]);
       }
     } catch (error: any) {
-      console.error('Error fetching health metrics:', error);
+      // console.error('Error fetching health metrics:', error);
       Alert.alert('Lỗi', 'Không thể tải dữ liệu sức khỏe.');
     } finally {
       setIsLoading(false);
@@ -89,7 +89,7 @@ const ViewHealthMetricScreen: React.FC = () => {
               Alert.alert('Thành công', 'Đã xóa bản ghi.');
               await fetchHealthMetrics();
             } catch (error: any) {
-              console.error('Error deleting metric:', error);
+              // console.error('Error deleting metric:', error);
               Alert.alert('Lỗi', 'Không thể xóa bản ghi.');
             }
           },

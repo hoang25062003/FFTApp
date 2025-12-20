@@ -1,17 +1,14 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Animated,
   ActivityIndicator,
 } from 'react-native';
-import { 
-  CheckCircle2,
-} from 'lucide-react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { 
   styles, 
@@ -20,213 +17,53 @@ import {
 } from './CreateHealthMetricScreenStyles';
 import HeaderApp from '../../components/HeaderApp';
 import { HealthMetricStackParamList } from '../../navigation/HealthMetricStackNavigator';
+import { useEditHealthMetric } from '../../hooks/useEditHealthMetric';
 
-// IMPORT SERVICES
-import ActivityLevelService, { 
-  ActivityLevel, 
-  getAllActivityLevels,
-} from '../../services/ActivityLevelService';
-
-import HealthMetricService, { 
-  HealthMetricUpdateInput 
-} from '../../services/HealthMetricService';
+const ERROR_COLOR = '#EF4444';
 
 type EditHealthMetricRouteProp = RouteProp<HealthMetricStackParamList, 'EditHealthMetric'>;
-
-const DATA_LIST = getAllActivityLevels();
 
 const EditHealthMetricScreen = () => {
   const navigation = useNavigation();
   const route = useRoute<EditHealthMetricRouteProp>();
   const { metricId } = route.params;
 
-  // Form State
-  const [weight, setWeight] = useState('');
-  const [height, setHeight] = useState('');
-  const [bodyFat, setBodyFat] = useState('');
-  const [muscleMass, setMuscleMass] = useState('');
-  const [note, setNote] = useState('');
-  
-  const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const {
+    scrollX,
+    activityScrollViewRef,
+    weight,
+    setWeight,
+    height,
+    setHeight,
+    bodyFat,
+    setBodyFat,
+    muscleMass,
+    setMuscleMass,
+    note,
+    setNote,
+    focusedInput,
+    errors,
+    handleFocus,
+    handleBlur,
+    selectedLevel,
+    currentLevelInfo,
+    isFetchingLevel,
+    handleSelectActivity,
+    isSubmitting,
+    handleSubmit,
+    isLoadingData,
+    DATA_LIST,
+  } = useEditHealthMetric(navigation, metricId);
 
-  // Activity Selector State
-  const [selectedLevel, setSelectedLevel] = useState<ActivityLevel>('Sedentary');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFetchingLevel, setIsFetchingLevel] = useState(true);
-  const [isLoadingData, setIsLoadingData] = useState(true);
-
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const activityScrollViewRef = useRef<ScrollView>(null);
-
-  // --- 1. LOAD DỮ LIỆU BAN ĐẦU ---
-  useEffect(() => {
-    const loadMetricData = async () => {
-      try {
-        setIsLoadingData(true);
-        
-        // Load metric data
-        const metric = await HealthMetricService.getMetricById(metricId);
-        
-        // Điền dữ liệu vào form
-        setWeight(metric.weightKg.toString());
-        setHeight(metric.heightCm.toString());
-        setBodyFat(metric.bodyFatPercent ? metric.bodyFatPercent.toString() : '');
-        setMuscleMass(metric.muscleMassKg ? metric.muscleMassKg.toString() : '');
-        setNote(metric.notes || '');
-
-        // Load activity level
-        const level = await ActivityLevelService.getActivityLevel();
-        setSelectedLevel(level);
-
-        const index = DATA_LIST.findIndex(item => item.level === level);
-        if (index !== -1 && activityScrollViewRef.current) {
-          setTimeout(() => {
-            activityScrollViewRef.current?.scrollTo({
-              x: index * FULL_ITEM_WIDTH,
-              animated: true,
-            });
-          }, 200);
-        }
-      } catch (error) {
-        console.error('Error loading metric data:', error);
-        Alert.alert('Lỗi', 'Không thể tải dữ liệu. Vui lòng thử lại.', [
-          { text: 'OK', onPress: () => navigation.goBack() }
-        ]);
-      } finally {
-        setIsLoadingData(false);
-        setIsFetchingLevel(false);
-      }
-    };
-
-    loadMetricData();
-  }, [metricId]);
-
-  const handleFocus = (field: string) => setFocusedInput(field);
-  const handleBlur = () => setFocusedInput(null);
   const handleBackPress = () => navigation.goBack();
 
-  // --- 2. UPDATE ACTIVITY LEVEL (Real-time) ---
-  const handleSelectActivity = async (level: ActivityLevel, index: number) => {
-    if (selectedLevel === level) return;
-
-    setSelectedLevel(level);
-    if (activityScrollViewRef.current) {
-      activityScrollViewRef.current.scrollTo({
-        x: index * FULL_ITEM_WIDTH,
-        animated: true,
-      });
-    }
-
-    try {
-      console.log(`Updating activity level to: ${level}`);
-      await ActivityLevelService.changeActivityLevel(level);
-    } catch (error) {
-      console.error('Failed to update activity level:', error);
-      Alert.alert('Lỗi kết nối', 'Không thể cập nhật mức độ hoạt động.');
-    }
-  };
-
-  // --- 3. VALIDATE INPUT ---
-  const validateInput = (): { isValid: boolean; message?: string } => {
-    if (!weight.trim() || !height.trim()) {
-      return { 
-        isValid: false, 
-        message: 'Vui lòng nhập Cân nặng và Chiều cao.' 
-      };
-    }
-
-    const weightNum = parseFloat(weight);
-    const heightNum = parseFloat(height);
-
-    if (isNaN(weightNum) || weightNum <= 0 || weightNum > 500) {
-      return { 
-        isValid: false, 
-        message: 'Cân nặng không hợp lệ (0-500 kg).' 
-      };
-    }
-
-    if (isNaN(heightNum) || heightNum <= 0 || heightNum > 300) {
-      return { 
-        isValid: false, 
-        message: 'Chiều cao không hợp lệ (0-300 cm).' 
-      };
-    }
-
-    if (bodyFat.trim()) {
-      const bodyFatNum = parseFloat(bodyFat);
-      if (isNaN(bodyFatNum) || bodyFatNum < 0 || bodyFatNum > 100) {
-        return { 
-          isValid: false, 
-          message: 'Tỷ lệ mỡ không hợp lệ (0-100%).' 
-        };
-      }
-    }
-
-    if (muscleMass.trim()) {
-      const muscleMassNum = parseFloat(muscleMass);
-      if (isNaN(muscleMassNum) || muscleMassNum <= 0 || muscleMassNum > 200) {
-        return { 
-          isValid: false, 
-          message: 'Khối lượng cơ không hợp lệ (0-200 kg).' 
-        };
-      }
-    }
-
-    return { isValid: true };
-  };
-
-  // --- 4. SUBMIT UPDATE ---
-  const handleSubmit = async () => {
-    const validation = validateInput();
-    if (!validation.isValid) {
-      Alert.alert('Dữ liệu không hợp lệ', validation.message);
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      // Chuẩn bị payload với chỉ những trường đã thay đổi
-      const payload: HealthMetricUpdateInput = {
-        weightKg: parseFloat(weight),
-        heightCm: parseFloat(height),
-        bodyFatPercent: bodyFat.trim() ? parseFloat(bodyFat) : null,
-        muscleMassKg: muscleMass.trim() ? parseFloat(muscleMass) : null,
-        notes: note.trim() || ''
-      };
-
-      console.log('📤 Updating Health Metric:', payload);
-
-      // Gọi API update với merge logic
-      const response = await HealthMetricService.updateMetricOnlyChanges(metricId, payload);
-      
-      console.log('✅ API Response:', response);
-
-      Alert.alert(
-        '🎉 Cập nhật thành công!', 
-        `Đã cập nhật hồ sơ sức khỏe!\n\n`,
-        [{ 
-          text: 'OK', 
-          onPress: () => navigation.goBack()
-        }]
-      );
-
-    } catch (error: any) {
-      console.error('❌ Update Error:', error);
-      
-      const errorMessage = error.message || 'Có lỗi xảy ra khi cập nhật thông tin.';
-      
-      Alert.alert(
-        'Lỗi', 
-        errorMessage,
-        [{ text: 'Đóng' }]
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const currentLevelInfo = ActivityLevelService.getActivityLevelInfo(selectedLevel);
+  const RenderError = ({ message }: { message?: string }) => (
+    message ? (
+      <Text style={{ color: ERROR_COLOR, fontSize: 12, marginTop: 4, marginLeft: 4, lineHeight: 16 }}>
+        {message}
+      </Text>
+    ) : null
+  );
 
   // Hiển thị loading khi đang tải dữ liệu
   if (isLoadingData) {
@@ -234,7 +71,7 @@ const EditHealthMetricScreen = () => {
       <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
         <HeaderApp isHome={false} onBackPress={handleBackPress} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color="#84CC16" />
+          <ActivityIndicator size="large" color="#8BC34A" />
           <Text style={{ marginTop: 16, fontSize: 16, color: '#64748B' }}>
             Đang tải dữ liệu...
           </Text>
@@ -244,26 +81,41 @@ const EditHealthMetricScreen = () => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F8F9FA' }}>
+    <View style={styles.container}>
       <HeaderApp isHome={false} onBackPress={handleBackPress} />
 
       <ScrollView 
+        style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.headerTitle}>Chỉnh Sửa Hồ Sơ</Text>
-            <Text style={styles.headerSubtitle}>Cập nhật thông số TDEE & Body</Text>
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <View style={styles.headerBackground}>
+            <View style={styles.decorativeCircle1} />
+            <View style={styles.decorativeCircle2} />
+            
+            <View style={styles.headerContent}>
+              <View>
+                <Text style={styles.headerSubtitle}>Cập nhật thông số</Text>
+                <Text style={styles.headerTitle}>Chỉnh Sửa Hồ Sơ</Text>
+              </View>
+              <View style={styles.headerIconContainer}>
+                <Icon name="file-document-edit-outline" size={32} color="#FFFFFF" />
+              </View>
+            </View>
           </View>
         </View>
 
         {/* --- SECTION 1: ACTIVITY LEVEL --- */}
         <View style={styles.sectionContainer}>
-          <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
-             <Text style={styles.sectionTitle}>1. Mức độ hoạt động</Text>
-             {isFetchingLevel && <ActivityIndicator size="small" color="#000" style={{marginRight: 20}}/>}
+          <View style={styles.sectionHeader}>
+            <Icon name="run" size={22} color="#8BC34A" />
+            <Text style={styles.sectionTitle}>Mức độ hoạt động</Text>
+            {isFetchingLevel && (
+              <ActivityIndicator size="small" color="#8BC34A" style={{ marginLeft: 8 }} />
+            )}
           </View>
           
           <Animated.ScrollView
@@ -323,82 +175,125 @@ const EditHealthMetricScreen = () => {
             })}
           </Animated.ScrollView>
           
-          <View style={styles.feedbackContainer}>
-             <Text style={styles.feedbackText}>
-               Bạn chọn: <Text style={{fontWeight: 'bold', color: currentLevelInfo.color}}>{currentLevelInfo.titleVN}</Text>
-             </Text>
+          <View style={styles.selectedBadge}>
+            <Icon name="check-circle" size={16} color={currentLevelInfo.color} />
+            <Text style={styles.selectedText}>
+              Đã chọn: <Text style={[styles.selectedTextBold, { color: currentLevelInfo.color }]}>
+                {currentLevelInfo.titleVN}
+              </Text>
+            </Text>
           </View>
         </View>
 
         {/* --- SECTION 2: BODY METRICS --- */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionTitle}>2. Chỉ số cơ thể</Text>
+          <View style={styles.sectionHeader}>
+            <Icon name="human" size={22} color="#8BC34A" />
+            <Text style={styles.sectionTitle}>Chỉ số cơ thể</Text>
+          </View>
           
           <View style={styles.formCard}>
             {/* Row 1: Cân nặng & Chiều cao */}
             <View style={styles.row}>
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Cân nặng (kg) <Text style={{color: 'red'}}>*</Text></Text>
+                <Text style={styles.label}>
+                  <Icon name="weight-kilogram" size={14} color="#6B7280" /> Cân nặng (kg)
+                  <Text style={styles.required}> *</Text>
+                </Text>
                 <TextInput
-                  style={[styles.input, focusedInput === 'weight' && styles.inputFocused]}
+                  style={[
+                    styles.input, 
+                    focusedInput === 'weight' && styles.inputFocused,
+                    errors.weight && { borderColor: ERROR_COLOR }
+                  ]}
                   value={weight}
                   onChangeText={setWeight}
                   placeholder="Ví dụ: 65"
-                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="decimal-pad"
                   onFocus={() => handleFocus('weight')}
                   onBlur={handleBlur}
                 />
+                <RenderError message={errors.weight} />
               </View>
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Chiều cao (cm) <Text style={{color: 'red'}}>*</Text></Text>
+                <Text style={styles.label}>
+                  <Icon name="human-male-height" size={14} color="#6B7280" /> Chiều cao (cm)
+                  <Text style={styles.required}> *</Text>
+                </Text>
                 <TextInput
-                  style={[styles.input, focusedInput === 'height' && styles.inputFocused]}
+                  style={[
+                    styles.input, 
+                    focusedInput === 'height' && styles.inputFocused,
+                    errors.height && { borderColor: ERROR_COLOR }
+                  ]}
                   value={height}
                   onChangeText={setHeight}
                   placeholder="Ví dụ: 170"
-                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="decimal-pad"
                   onFocus={() => handleFocus('height')}
                   onBlur={handleBlur}
                 />
+                <RenderError message={errors.height} />
               </View>
             </View>
 
             {/* Row 2: Tỷ lệ mỡ & Cơ bắp */}
             <View style={styles.row}>
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Tỷ lệ mỡ (%)</Text>
+                <Text style={styles.label}>
+                  <Icon name="percent" size={14} color="#6B7280" /> Tỷ lệ mỡ (%)
+                </Text>
                 <TextInput
-                  style={[styles.input, focusedInput === 'bodyFat' && styles.inputFocused]}
+                  style={[
+                    styles.input, 
+                    focusedInput === 'bodyFat' && styles.inputFocused,
+                    errors.bodyFat && { borderColor: ERROR_COLOR }
+                  ]}
                   value={bodyFat}
                   onChangeText={setBodyFat}
                   placeholder="Tùy chọn"
-                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="decimal-pad"
                   onFocus={() => handleFocus('bodyFat')}
                   onBlur={handleBlur}
                 />
+                <RenderError message={errors.bodyFat} />
               </View>
               <View style={styles.halfInput}>
-                <Text style={styles.label}>Cơ bắp (kg)</Text>
+                <Text style={styles.label}>
+                  <Icon name="arm-flex" size={14} color="#6B7280" /> Cơ bắp (kg)
+                </Text>
                 <TextInput
-                  style={[styles.input, focusedInput === 'muscleMass' && styles.inputFocused]}
+                  style={[
+                    styles.input, 
+                    focusedInput === 'muscleMass' && styles.inputFocused,
+                    errors.muscleMass && { borderColor: ERROR_COLOR }
+                  ]}
                   value={muscleMass}
                   onChangeText={setMuscleMass}
                   placeholder="Tùy chọn"
-                  keyboardType="numeric"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="decimal-pad"
                   onFocus={() => handleFocus('muscleMass')}
                   onBlur={handleBlur}
                 />
+                <RenderError message={errors.muscleMass} />
               </View>
             </View>
 
             {/* Ghi chú */}
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Ghi chú thêm</Text>
+              <Text style={styles.label}>
+                <Icon name="note-text-outline" size={14} color="#6B7280" /> Ghi chú thêm
+              </Text>
               <TextInput
-                style={[styles.input, styles.bioInput, focusedInput === 'note' && styles.bioInputFocused]}
+                style={[styles.input, styles.bioInput, focusedInput === 'note' && styles.inputFocused]}
                 value={note}
                 onChangeText={setNote}
                 placeholder="Ghi chú về thể trạng..."
+                placeholderTextColor="#9CA3AF"
                 multiline
                 textAlignVertical="top"
                 onFocus={() => handleFocus('note')}
@@ -408,10 +303,10 @@ const EditHealthMetricScreen = () => {
           </View>
         </View>
 
-        <View style={{ height: 30 }} />
+        <View style={{ height: 20 }} />
         
         <TouchableOpacity 
-          style={[styles.submitButton, isSubmitting && { opacity: 0.7 }]} 
+          style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
           activeOpacity={0.8} 
           onPress={handleSubmit}
           disabled={isSubmitting}
@@ -420,7 +315,7 @@ const EditHealthMetricScreen = () => {
             <ActivityIndicator color="#FFFFFF" />
           ) : (
             <>
-              <CheckCircle2 size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Icon name="content-save-edit-outline" size={24} color="#FFFFFF" style={{ marginRight: 8 }} />
               <Text style={styles.submitButtonText}>Cập Nhật</Text>
             </>
           )}

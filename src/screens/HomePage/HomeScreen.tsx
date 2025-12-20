@@ -5,26 +5,39 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import MaterialIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import HeaderApp from '../../components/HeaderApp';
 import styles, { BRAND_COLOR } from './HomeScreenStyles';
 
-import { getRecipes, MyRecipe, saveRecipe, unsaveRecipe, getSavedRecipes, searchRecipes } from '../../services/RecipeService';
+import { 
+    getRecipes, 
+    MyRecipe, 
+    saveRecipe, 
+    unsaveRecipe, 
+    getSavedRecipes, 
+    searchRecipes,
+    shareRecipe // ✅ THÊM import
+} from '../../services/RecipeService';
 import { getIngredients, Ingredient } from '../../services/IngredientService';
+import { getAverageRating, AverageRatingResponse } from '../../services/RatingService';
 
 const HomeScreen: React.FC = () => {
     const navigation = useNavigation<any>();
+    const route = useRoute<any>();
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [isLoadingIngredients, setIsLoadingIngredients] = useState(true);
     const [isLoadingDishes, setIsLoadingDishes] = useState(true);
     const [savingRecipes, setSavingRecipes] = useState<Set<string>>(new Set());
+    const [sharingRecipes, setSharingRecipes] = useState<Set<string>>(new Set()); // ✅ THÊM
     
     const [ingredients, setIngredients] = useState<Ingredient[]>([]);
     const [dishes, setDishes] = useState<MyRecipe[]>([]);
     const [savedRecipeIds, setSavedRecipeIds] = useState<Set<string>>(new Set());
     
-    // ✅ THAY ĐỔI: Cho phép chọn nhiều nguyên liệu
+    const [recipeRatings, setRecipeRatings] = useState<Map<string, AverageRatingResponse>>(new Map());
+    const [loadingRatings, setLoadingRatings] = useState<Set<string>>(new Set());
+    
     const [selectedIngredients, setSelectedIngredients] = useState<Map<string, string>>(new Map());
 
     const isSearching = searchQuery.trim().length > 0 || selectedIngredients.size > 0;
@@ -40,7 +53,6 @@ const HomeScreen: React.FC = () => {
             const ids = new Set(savedRecipes.items.map(recipe => recipe.id));
             setSavedRecipeIds(ids);
         } catch (error) {
-            console.error('Error loading saved recipes:', error);
             setSavedRecipeIds(new Set());
         }
     };
@@ -51,12 +63,42 @@ const HomeScreen: React.FC = () => {
             const response = await getIngredients(1, 10);
             setIngredients(response.items);
         } catch (error) {
-            console.error('Error loading ingredients:', error);
             setIngredients([]);
         } finally {
             setIsLoadingIngredients(false);
         }
     };
+
+    const loadRecipeRating = async (recipeId: string) => {
+        if (loadingRatings.has(recipeId)) return;
+        if (recipeRatings.has(recipeId)) return;
+
+        setLoadingRatings(prev => new Set(prev).add(recipeId));
+
+        try {
+            const ratingData = await getAverageRating(recipeId);
+            setRecipeRatings(prev => new Map(prev).set(recipeId, ratingData));
+        } catch (error) {
+            setRecipeRatings(prev => new Map(prev).set(recipeId, {
+                ratingCount: 0,
+                avgRating: 0
+            }));
+        } finally {
+            setLoadingRatings(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(recipeId);
+                return newSet;
+            });
+        }
+    };
+
+    useEffect(() => {
+        if (dishes.length > 0) {
+            dishes.forEach(dish => {
+                loadRecipeRating(dish.id);
+            });
+        }
+    }, [dishes]);
 
     const loadDishes = async () => {
         try {
@@ -64,7 +106,6 @@ const HomeScreen: React.FC = () => {
             const response = await getRecipes({ page: 1, pageSize: 10 });
             setDishes(response.items);
         } catch (error) {
-            console.error('Error loading dishes:', error);
             setDishes([]);
         } finally {
             setIsLoadingDishes(false);
@@ -92,7 +133,6 @@ const HomeScreen: React.FC = () => {
             });
             setDishes(response.items);
         } catch (error) {
-            console.error('Error searching dishes:', error);
             setDishes([]);
             Alert.alert("Lỗi", "Không thể tìm kiếm món ăn lúc này.");
         } finally {
@@ -106,29 +146,24 @@ const HomeScreen: React.FC = () => {
         loadDishes();
     };
 
-    // ✅ HÀM MỚI: Toggle chọn/bỏ chọn nguyên liệu
     const handleIngredientPress = async (ingredientId: string, ingredientName: string) => {
         const newSelectedIngredients = new Map(selectedIngredients);
         
         if (newSelectedIngredients.has(ingredientId)) {
-            // Bỏ chọn nếu đã được chọn
             newSelectedIngredients.delete(ingredientId);
         } else {
-            // Thêm vào danh sách được chọn
             newSelectedIngredients.set(ingredientId, ingredientName);
         }
         
         setSelectedIngredients(newSelectedIngredients);
-        setSearchQuery(''); // Clear search query khi chọn ingredient
+        setSearchQuery('');
         
         try {
             setIsLoadingDishes(true);
             
             if (newSelectedIngredients.size === 0) {
-                // Nếu không có nguyên liệu nào được chọn, load lại dishes mặc định
                 await loadDishes();
             } else {
-                // Tìm kiếm với danh sách nguyên liệu được chọn
                 const ingredientIds = Array.from(newSelectedIngredients.keys());
                 const response = await searchRecipes({ 
                     pageNumber: 1, 
@@ -138,7 +173,6 @@ const HomeScreen: React.FC = () => {
                 setDishes(response.items);
             }
         } catch (error) {
-            console.error('Error searching by ingredients:', error);
             setDishes([]);
             Alert.alert("Lỗi", "Không thể tìm kiếm món ăn theo nguyên liệu này.");
         } finally {
@@ -146,7 +180,6 @@ const HomeScreen: React.FC = () => {
         }
     };
 
-    // ✅ HÀM MỚI: Xóa một nguyên liệu cụ thể
     const handleRemoveIngredient = async (ingredientId: string) => {
         const newSelectedIngredients = new Map(selectedIngredients);
         newSelectedIngredients.delete(ingredientId);
@@ -167,7 +200,6 @@ const HomeScreen: React.FC = () => {
                 setDishes(response.items);
             }
         } catch (error) {
-            console.error('Error searching by ingredients:', error);
             setDishes([]);
         } finally {
             setIsLoadingDishes(false);
@@ -189,11 +221,53 @@ const HomeScreen: React.FC = () => {
     useFocusEffect(
         useCallback(() => {
             loadSavedRecipeIds();
-        }, [])
+            
+            const params = route.params as any;
+            if (params?.fromScan && params?.ingredientNames) {
+                if (ingredients.length > 0) {
+                    const selectedFromScan = new Map<string, string>();
+                    
+                    params.ingredientNames.forEach((ingredientName: string) => {
+                        const foundIngredient = ingredients.find(
+                            ing => ing.name.toLowerCase() === ingredientName.toLowerCase()
+                        );
+                        
+                        if (foundIngredient) {
+                            selectedFromScan.set(foundIngredient.id, foundIngredient.name);
+                        }
+                    });
+                    
+                    if (selectedFromScan.size > 0) {
+                        setSelectedIngredients(selectedFromScan);
+                        
+                        (async () => {
+                            try {
+                                setIsLoadingDishes(true);
+                                const ingredientIds = Array.from(selectedFromScan.keys());
+                                const response = await searchRecipes({
+                                    pageNumber: 1,
+                                    pageSize: 20,
+                                    ingredientIds
+                                });
+                                setDishes(response.items);
+                            } catch (error) {
+                                Alert.alert("Lỗi", "Không thể tìm kiếm theo nguyên liệu từ scan.");
+                            } finally {
+                                setIsLoadingDishes(false);
+                            }
+                        })();
+                        
+                        navigation.setParams({ fromScan: false, ingredientNames: undefined });
+                    }
+                }
+            }
+        }, [ingredients, navigation, route.params])
     );
 
     const handleRefresh = async () => {
         setIsRefreshing(true);
+        setRecipeRatings(new Map());
+        
         if (isSearching) {
             await handleSearch();
         } else {
@@ -249,7 +323,7 @@ const HomeScreen: React.FC = () => {
                 setSavedRecipeIds(prev => new Set(prev).add(recipeId));
             }
         } catch (error) {
-            console.error('Error saving/unsaving recipe:', error);
+            // Silent error
         } finally {
             setSavingRecipes(prev => {
                 const newSet = new Set(prev);
@@ -259,8 +333,45 @@ const HomeScreen: React.FC = () => {
         }
     };
 
+    // ✅ THÊM handler cho share
+    const handleShareRecipe = async (recipeId: string, recipeName: string) => {
+        if (sharingRecipes.has(recipeId)) return;
+        
+        setSharingRecipes(prev => new Set(prev).add(recipeId));
+        
+        try {
+            await shareRecipe(recipeId, recipeName);
+        } catch (error) {
+            // Lỗi đã được handle trong hàm shareRecipe
+        } finally {
+            setSharingRecipes(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(recipeId);
+                return newSet;
+            });
+        }
+    };
+
     const handleViewAllIngredients = () => {
         navigation.navigate('IngredientsScreen');
+    };
+
+    const getRatingDisplay = (recipeId: string) => {
+        const ratingData = recipeRatings.get(recipeId);
+        const isLoading = loadingRatings.has(recipeId);
+
+        if (isLoading) {
+            return { text: '...', count: 0 };
+        }
+
+        if (ratingData && ratingData.avgRating > 0) {
+            return {
+                text: ratingData.avgRating.toFixed(1),
+                count: ratingData.ratingCount
+            };
+        }
+
+        return { text: 'N/A', count: 0 };
     };
 
     return (
@@ -314,7 +425,6 @@ const HomeScreen: React.FC = () => {
                         )}
                     </View>
                     
-                    {/* ✅ HIỂN THỊ DANH SÁCH CHIPS NGUYÊN LIỆU ĐƯỢC CHỌN */}
                     {selectedIngredients.size > 0 && (
                         <View style={styles.selectedIngredientsContainer}>
                             <ScrollView 
@@ -369,7 +479,6 @@ const HomeScreen: React.FC = () => {
                                         key={item.id} 
                                         style={[
                                             styles.recentCard,
-                                            // ✅ HIGHLIGHT NGUYÊN LIỆU ĐƯỢC CHỌN
                                             isSelected && {
                                                 borderWidth: 2,
                                                 borderColor: BRAND_COLOR,
@@ -378,7 +487,6 @@ const HomeScreen: React.FC = () => {
                                         ]}
                                         onPress={() => handleIngredientPress(item.id, item.name)}
                                     >
-                                        {/* ✅ HIỂN THỊ CHECKMARK NẾU ĐƯỢC CHỌN */}
                                         {isSelected && (
                                             <View style={styles.selectedBadge}>
                                                 <Icon name="checkmark-circle" size={24} color={BRAND_COLOR} />
@@ -445,6 +553,10 @@ const HomeScreen: React.FC = () => {
                                 : 'Ẩn danh';
                             const isSaved = savedRecipeIds.has(dish.id);
                             const isSaving = savingRecipes.has(dish.id);
+                            const isSharing = sharingRecipes.has(dish.id); // ✅ THÊM
+                            
+                            const ratingDisplay = getRatingDisplay(dish.id);
+                            const isLoadingRating = loadingRatings.has(dish.id);
                             
                             return (
                                 <View key={dish.id} style={styles.dishCard}>
@@ -511,14 +623,19 @@ const HomeScreen: React.FC = () => {
                                             <Text style={styles.infoValue}>{dish.ration}</Text>
                                             <Text style={styles.infoLabel}>người</Text>
                                         </View>
+                                        
                                         <View style={styles.infoCard}>
                                             <View style={[styles.infoIconBg, { backgroundColor: '#FEF3C7' }]}>
                                                 <Icon name="star" size={18} color="#F59E0B" />
                                             </View>
-                                            <Text style={styles.infoValue}>
-                                                {dish.averageRating ? dish.averageRating.toFixed(1) : 'N/A'}
-                                            </Text>
-                                            <Text style={styles.infoLabel}>đánh giá</Text>
+                                            {isLoadingRating ? (
+                                                <ActivityIndicator size="small" color="#F59E0B" style={{ height: 24 }} />
+                                            ) : (
+                                                <>
+                                                    <Text style={styles.infoValue}>{ratingDisplay.text}</Text>
+                                                    <Text style={styles.infoLabel}>đánh giá</Text>
+                                                </>
+                                            )}
                                         </View>
                                     </View>
 
@@ -546,11 +663,22 @@ const HomeScreen: React.FC = () => {
                                             )}
                                         </TouchableOpacity>
 
-                                        <TouchableOpacity style={styles.actionButton}>
-                                            <View style={styles.actionIconBg}>
-                                                <Icon name="share-social-outline" size={18} color={BRAND_COLOR} />
-                                            </View>
-                                            <Text style={styles.actionText}>Chia sẻ</Text>
+                                        {/* ✅ UPDATED: Share button */}
+                                        <TouchableOpacity 
+                                            style={styles.actionButton}
+                                            onPress={() => handleShareRecipe(dish.id, dish.name)}
+                                            disabled={isSharing}
+                                        >
+                                            {isSharing ? (
+                                                <ActivityIndicator size="small" color={BRAND_COLOR} />
+                                            ) : (
+                                                <>
+                                                    <View style={styles.actionIconBg}>
+                                                        <Icon name="share-social-outline" size={18} color={BRAND_COLOR} />
+                                                    </View>
+                                                    <Text style={styles.actionText}>Chia sẻ</Text>
+                                                </>
+                                            )}
                                         </TouchableOpacity>
 
                                         <TouchableOpacity 

@@ -347,6 +347,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F9FAFB',
+    gap: 8,
   },
   
   bulletDot: {
@@ -358,10 +359,25 @@ const styles = StyleSheet.create({
   },
   
   ingredientName: {
-    flex: 1,
     fontSize: 15,
     color: '#374151',
     fontWeight: '500',
+  },
+
+  // ✅ THÊM: Warning badge styles
+  warningBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    gap: 4,
+    borderWidth: 1,
+  },
+
+  warningBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
   },
   
   quantityBadge: {
@@ -492,7 +508,6 @@ const styles = StyleSheet.create({
     marginVertical: 16,
   },
 
-  // ===== INPUT WRAPPER & FOCUS =====
   inputWrapper: {
     borderWidth: 1.5,
     borderColor: '#E5E7EB',
@@ -525,7 +540,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 
-  // ===== ERROR TEXT =====
   errorText: {
     fontSize: 13,
     color: '#EF4444',
@@ -608,7 +622,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
 
-  // ===== NEW: REVIEW ACTIONS =====
   reviewActions: {
     alignItems: 'flex-end',
     gap: 4,
@@ -760,6 +773,196 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontWeight: '600',
     marginTop: 8,
+  },
+
+  // ==========================
+  // 7. COMMENT SECTION
+  // ==========================
+  commentContainer: {
+    flex: 1,
+  },
+
+  commentInputContainer: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  replyingToContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+
+  replyingToText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+
+  replyingToName: {
+    color: BRAND_COLOR,
+    fontWeight: '700',
+  },
+
+  commentInputWrapper: {
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    overflow: 'hidden',
+    marginBottom: 12,
+  },
+
+  commentInput: {
+    padding: 12,
+    fontSize: 15,
+    color: '#1F2937',
+    textAlignVertical: 'top',
+    minHeight: 80,
+    fontWeight: '500',
+  },
+
+  commentSubmitButton: {
+    backgroundColor: BRAND_COLOR,
+    borderRadius: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+  },
+
+  commentSubmitText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
+  },
+
+  commentListCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    marginBottom: 16,
+  },
+
+  commentItem: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+
+  replyItem: {
+    marginLeft: 20,
+    paddingLeft: 16,
+    borderLeftWidth: 2,
+    borderLeftColor: '#E5E7EB',
+  },
+
+  commentHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 10,
+  },
+
+  commentAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: BRAND_COLOR,
+  },
+
+  commentAvatarText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  commentInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+
+  commentUserName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+
+  commentDate: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+
+  commentActionIcon: {
+    padding: 4,
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
+  },
+
+  commentText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#4B5563',
+    marginBottom: 8,
+  },
+
+  replyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+
+  replyButtonText: {
+    fontSize: 14,
+    color: BRAND_COLOR,
+    fontWeight: '600',
+  },
+
+  repliesContainer: {
+    marginTop: 12,
+  },
+
+  tabLoadingContainer: {
+    minHeight: 300,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    borderRadius: 20,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+
+  tabLoadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
   },
 });
 

@@ -1,8 +1,8 @@
 import { StyleSheet, Platform } from 'react-native';
 
-// Hằng số màu sắc (Export để sử dụng trong file Component)
 export const BRAND_COLOR = '#8BC34A';
 export const BG_COLOR = '#F8F9FA';
+export const ERROR_COLOR = '#EF4444';
 
 export const styles = StyleSheet.create({
     container: {
@@ -81,11 +81,10 @@ export const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 6,
         shadowColor: '#000',
-        // Tối ưu hóa đổ bóng để giảm lag khi cuộn
         shadowOffset: { width: 0, height: 2 }, 
-        shadowOpacity: 0.08, // Giảm từ 0.1
-        shadowRadius: 8, // Giảm từ 12
-        elevation: 4, // Giảm từ 5
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+        elevation: 4,
         marginBottom: 16,
     },
     tabContainer: {
@@ -121,11 +120,10 @@ export const styles = StyleSheet.create({
         borderRadius: 20,
         padding: 20,
         shadowColor: '#000',
-        // Tối ưu hóa đổ bóng để giảm lag khi cuộn
         shadowOffset: { width: 0, height: 1 }, 
         shadowOpacity: 0.05,
-        shadowRadius: 4, // Giảm từ 8
-        elevation: 2, // Giảm từ 3
+        shadowRadius: 4,
+        elevation: 2,
         marginBottom: 16,
     },
     formSection: {
@@ -143,7 +141,7 @@ export const styles = StyleSheet.create({
         color: '#1F2937',
     },
     required: {
-        color: '#EF4444',
+        color: ERROR_COLOR,
         fontSize: 15,
         fontWeight: '700',
     },
@@ -163,6 +161,14 @@ export const styles = StyleSheet.create({
         paddingVertical: 14,
         backgroundColor: '#F9FAFB',
     },
+    inputBoxFocused: {
+        borderColor: BRAND_COLOR,
+        backgroundColor: '#FFFFFF',
+    },
+    inputBoxError: {
+        borderColor: ERROR_COLOR,
+        backgroundColor: '#FEF2F2',
+    },
     inputText: {
         fontSize: 15,
         color: '#1F2937',
@@ -171,6 +177,13 @@ export const styles = StyleSheet.create({
     placeholderText: {
         fontSize: 15,
         color: '#9CA3AF',
+    },
+    errorText: {
+        color: ERROR_COLOR,
+        fontSize: 12,
+        marginTop: 4,
+        marginLeft: 4,
+        lineHeight: 16,
     },
     typeDisplayContainer: {
         flexDirection: 'row',
@@ -191,7 +204,6 @@ export const styles = StyleSheet.create({
         marginTop: 8,
         backgroundColor: '#FFFFFF',
         overflow: 'hidden',
-        // Thêm đổ bóng nhẹ cho dropdown
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -225,8 +237,12 @@ export const styles = StyleSheet.create({
         borderColor: '#E5E7EB',
         borderRadius: 12,
         padding: 12,
-        height: 120, // Chiều cao cố định
+        height: 120,
         backgroundColor: '#F9FAFB',
+    },
+    textAreaContainerFocused: {
+        borderColor: BRAND_COLOR,
+        backgroundColor: '#FFFFFF',
     },
     textArea: {
         fontSize: 15,
@@ -333,7 +349,7 @@ export const styles = StyleSheet.create({
         borderTopRightRadius: 20,
     },
     iosCancelText: {
-        color: '#EF4444',
+        color: ERROR_COLOR,
         fontSize: 16,
         fontWeight: '600',
     },

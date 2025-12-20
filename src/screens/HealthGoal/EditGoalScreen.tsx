@@ -11,16 +11,24 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import HeaderApp from '../../components/HeaderApp';
 import { styles, BRAND_COLOR } from './CreateGoalScreenStyles';
-import { useCreateGoal } from '../../hooks/useCreateGoal';
+import { useEditGoal } from '../../hooks/userEditGoal';
 
 const ERROR_COLOR = '#EF4444';
 
-const CreateGoalScreen = () => {
+type ParamList = {
+    EditHealthGoal: {
+        goalId: string;
+    };
+};
+
+const EditGoalScreen = () => {
     const navigation = useNavigation();
-    
+    const route = useRoute<RouteProp<ParamList, 'EditHealthGoal'>>();
+    const { goalId } = route.params;
+
     const {
         goalNameRef,
         goalDescriptionRef,
@@ -29,7 +37,7 @@ const CreateGoalScreen = () => {
         goalDescription,
         setGoalDescription,
         targets,
-        isLoadingNutrients,
+        isLoadingData,
         availableNutrients,
         showNutrientModal,
         setShowNutrientModal,
@@ -46,7 +54,7 @@ const CreateGoalScreen = () => {
         updateTarget,
         getPriorityConfig,
         handleSave,
-    } = useCreateGoal(navigation);
+    } = useEditGoal(navigation, goalId);
 
     const handleBackPress = () => {
         if (navigation.canGoBack()) {
@@ -61,6 +69,15 @@ const CreateGoalScreen = () => {
             </Text>
         ) : null
     );
+
+    if (isLoadingData) {
+        return (
+            <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color={BRAND_COLOR} />
+                <Text style={{ marginTop: 10, color: '#6B7280' }}>Đang tải dữ liệu...</Text>
+            </SafeAreaView>
+        );
+    }
 
     return (
         <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -80,11 +97,11 @@ const CreateGoalScreen = () => {
                             <View style={styles.decorativeCircle2} />
                             <View style={styles.headerContent}>
                                 <View>
-                                    <Text style={styles.headerTitle}>Tạo Mục Tiêu Mới</Text>
-                                    <Text style={styles.headerSubtitle}>Cá nhân hóa với các chỉ số dinh dưỡng cụ thể</Text>
+                                    <Text style={styles.headerTitle}>Chỉnh Sửa Mục Tiêu</Text>
+                                    <Text style={styles.headerSubtitle}>Cập nhật thông tin và chỉ số dinh dưỡng</Text>
                                 </View>
                                 <View style={styles.headerIconContainer}>
-                                    <Icon name="target" size={28} color="rgba(255,255,255,0.8)" />
+                                    <Icon name="file-document-edit-outline" size={28} color="rgba(255,255,255,0.8)" />
                                 </View>
                             </View>
                         </View>
@@ -428,12 +445,12 @@ const CreateGoalScreen = () => {
                         {isSaving ? (
                             <>
                                 <ActivityIndicator size="small" color="#FFFFFF" />
-                                <Text style={styles.saveButtonText}>Đang xử lý...</Text>
+                                <Text style={styles.saveButtonText}>Đang lưu...</Text>
                             </>
                         ) : (
                             <>
-                                <Icon name="check-circle-outline" size={20} color="#FFFFFF" />
-                                <Text style={styles.saveButtonText}>Tạo Mục Tiêu</Text>
+                                <Icon name="content-save-edit-outline" size={20} color="#FFFFFF" />
+                                <Text style={styles.saveButtonText}>Lưu Thay Đổi</Text>
                             </>
                         )}
                     </TouchableOpacity>
@@ -472,45 +489,38 @@ const CreateGoalScreen = () => {
                             )}
                         </View>
 
-                        {isLoadingNutrients ? (
-                            <View style={styles.loadingContainer}>
-                                <ActivityIndicator size="large" color={BRAND_COLOR} />
-                                <Text style={styles.loadingText}>Đang tải...</Text>
-                            </View>
-                        ) : (
-                            <FlatList
-                                data={availableNutrients}
-                                keyExtractor={(item) => item.id}
-                                showsVerticalScrollIndicator={false}
-                                ListEmptyComponent={
-                                    <View style={styles.emptyModalState}>
-                                        <Icon name="database-off" size={40} color="#D1D5DB" />
-                                        <Text style={styles.emptyModalText}>Không tìm thấy kết quả</Text>
-                                    </View>
-                                }
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        style={styles.nutrientItem}
-                                        onPress={() => handleAddTarget(item)}
-                                    >
-                                        <View style={styles.nutrientItemLeft}>
-                                            <View style={styles.nutrientIconBadge}>
-                                                <Icon 
-                                                    name="pill" 
-                                                    size={16} 
-                                                    color={BRAND_COLOR} 
-                                                />
-                                            </View>
-                                            <View>
-                                                <Text style={styles.nutrientItemText}>{item.vietnameseName}</Text>
-                                                <Text style={styles.nutrientItemUnit}>Đơn vị: {item.unit}</Text>
-                                            </View>
+                        <FlatList
+                            data={availableNutrients}
+                            keyExtractor={(item) => item.id}
+                            showsVerticalScrollIndicator={false}
+                            ListEmptyComponent={
+                                <View style={styles.emptyModalState}>
+                                    <Icon name="database-off" size={40} color="#D1D5DB" />
+                                    <Text style={styles.emptyModalText}>Không tìm thấy kết quả</Text>
+                                </View>
+                            }
+                            renderItem={({ item }) => (
+                                <TouchableOpacity
+                                    style={styles.nutrientItem}
+                                    onPress={() => handleAddTarget(item)}
+                                >
+                                    <View style={styles.nutrientItemLeft}>
+                                        <View style={styles.nutrientIconBadge}>
+                                            <Icon 
+                                                name="pill" 
+                                                size={16} 
+                                                color={BRAND_COLOR} 
+                                            />
                                         </View>
-                                        <Icon name="plus-circle-outline" size={24} color={BRAND_COLOR} />
-                                    </TouchableOpacity>
-                                )}
-                            />
-                        )}
+                                        <View>
+                                            <Text style={styles.nutrientItemText}>{item.vietnameseName}</Text>
+                                            <Text style={styles.nutrientItemUnit}>Đơn vị: {item.unit}</Text>
+                                        </View>
+                                    </View>
+                                    <Icon name="plus-circle-outline" size={24} color={BRAND_COLOR} />
+                                </TouchableOpacity>
+                            )}
+                        />
                     </View>
                 </View>
             </Modal>
@@ -518,4 +528,4 @@ const CreateGoalScreen = () => {
     );
 };
 
-export default CreateGoalScreen;
+export default EditGoalScreen;

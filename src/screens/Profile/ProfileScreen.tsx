@@ -126,7 +126,7 @@ const ProfileScreen: React.FC = () => {
             }
             setError(null);
         } catch (err) {
-            console.error('API Error:', err);
+            // console.error('API Error:', err);
             setError('Không thể tải hồ sơ');
         }
     }, [isOwnProfile, username]);
@@ -164,7 +164,7 @@ const ProfileScreen: React.FC = () => {
                 setTotalRecipes(0);
             }
         } catch (err) {
-            console.error(err);
+            // console.error(err);
             setRecipes([]);
         } finally {
             setIsLoadingRecipes(false);
@@ -199,14 +199,14 @@ const ProfileScreen: React.FC = () => {
 
     const handleSubmitReport = async (reason: string) => {
         try {
-            console.log('Sending report for user:', userData.id, 'Reason:', reason);
+            // console.log('Sending report for user:', userData.id, 'Reason:', reason);
             // TODO: await profileService.reportUser(userData.id, reason);
             setReportVisible(false);
             setTimeout(() => {
                 Alert.alert('Đã gửi', 'Cảm ơn bạn đã báo cáo. Chúng tôi sẽ xem xét sớm.');
             }, 300);
         } catch (error) {
-            console.error(error);
+            // console.error(error);
             Alert.alert('Lỗi', 'Có lỗi xảy ra khi gửi báo cáo.');
         }
     };
@@ -559,12 +559,12 @@ const ProfileScreen: React.FC = () => {
                 </View>
             </ScrollView>
 
-            <ReportDialog
+            {/* <ReportDialog
                 visible={isReportVisible}
                 reportedUser={fullName}
                 onClose={() => setReportVisible(false)}
                 onSubmit={handleSubmitReport}
-            />
+            /> */}
         </View>
     );
 };

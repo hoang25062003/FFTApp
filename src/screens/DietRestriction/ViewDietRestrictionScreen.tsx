@@ -148,7 +148,7 @@ const ViewDietRestrictionScreen: React.FC = () => {
       });
 
     } catch (error) {
-      console.error('Lỗi tải dữ liệu:', error);
+      // console.error('Lỗi tải dữ liệu:', error);
     } finally {
       setIsRefreshing(false);
       setIsLoading(false);
@@ -190,7 +190,7 @@ const ViewDietRestrictionScreen: React.FC = () => {
                   }
               });
             } catch (error) {
-              console.error('Lỗi xóa:', error);
+              // console.error('Lỗi xóa:', error);
               Alert.alert('Lỗi', 'Không thể xóa mục này.');
             }
           },

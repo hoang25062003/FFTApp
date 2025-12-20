@@ -1,14 +1,12 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Animated,
   ActivityIndicator,
-  
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
@@ -19,242 +17,51 @@ import {
 } from './CreateHealthMetricScreenStyles';
 import HeaderApp from '../../components/HeaderApp';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useCreateHealthMetric } from '../../hooks/useCreateHealthMetric';
 
-// IMPORT SERVICES
-import ActivityLevelService, { 
-  ActivityLevel, 
-  getAllActivityLevels,
-} from '../../services/ActivityLevelService';
-
-import HealthMetricService, { HealthMetricInput } from '../../services/HealthMetricService';
-
-const DATA_LIST = getAllActivityLevels();
+const ERROR_COLOR = '#EF4444';
 
 const CreateHealthMetricScreen = () => {
-  const navigation = useNavigation(); 
-
-  // Form State
-  const [weight, setWeight] = useState('');
-  const [height, setHeight] = useState('');
-  const [bodyFat, setBodyFat] = useState('');
-  const [muscleMass, setMuscleMass] = useState('');
-  const [note, setNote] = useState('');
+  const navigation = useNavigation();
   
-  const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  const {
+    scrollX,
+    activityScrollViewRef,
+    weight,
+    setWeight,
+    height,
+    setHeight,
+    bodyFat,
+    setBodyFat,
+    muscleMass,
+    setMuscleMass,
+    note,
+    setNote,
+    focusedInput,
+    errors,
+    handleFocus,
+    handleBlur,
+    selectedLevel,
+    currentLevelInfo,
+    isFetchingLevel,
+    handleSelectActivity,
+    isSubmitting,
+    handleSubmit,
+    DATA_LIST,
+  } = useCreateHealthMetric(navigation);
 
-  // Activity Selector State
-  const [selectedLevel, setSelectedLevel] = useState<ActivityLevel>('Sedentary');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isFetchingLevel, setIsFetchingLevel] = useState(true);
-
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const activityScrollViewRef = useRef<ScrollView>(null);
-
-  // --- 1. INITIAL LOAD ---
-  useEffect(() => {
-    const fetchCurrentLevel = async () => {
-      try {
-        setIsFetchingLevel(true);
-        const level = await ActivityLevelService.getActivityLevel();
-        setSelectedLevel(level);
-
-        const index = DATA_LIST.findIndex(item => item.level === level);
-        if (index !== -1 && activityScrollViewRef.current) {
-          setTimeout(() => {
-            activityScrollViewRef.current?.scrollTo({
-              x: index * FULL_ITEM_WIDTH,
-              animated: true,
-            });
-          }, 200);
-        }
-      } catch (error) {
-        console.log('Error fetching initial activity level:', error);
-      } finally {
-        setIsFetchingLevel(false);
-      }
-    };
-
-    fetchCurrentLevel();
-  }, []);
-
-  const handleFocus = (field: string) => setFocusedInput(field);
-  const handleBlur = () => setFocusedInput(null);
   const handleBackPress = () => navigation.goBack();
 
-  // --- 2. UPDATE ACTIVITY LEVEL (Real-time) ---
-  const handleSelectActivity = async (level: ActivityLevel, index: number) => {
-    if (selectedLevel === level) return;
-
-    setSelectedLevel(level);
-    if (activityScrollViewRef.current) {
-      activityScrollViewRef.current.scrollTo({
-        x: index * FULL_ITEM_WIDTH,
-        animated: true,
-      });
-    }
-
-    try {
-      console.log(`Updating activity level to: ${level}`);
-      await ActivityLevelService.changeActivityLevel(level);
-    } catch (error) {
-      console.error('Failed to update activity level:', error);
-      Alert.alert('Lỗi kết nối', 'Không thể cập nhật mức độ hoạt động.');
-    }
-  };
-
-  // --- 3. VALIDATE INPUT ---
-  const validateInput = (): { isValid: boolean; message?: string } => {
-    if (!weight.trim() || !height.trim()) {
-      return { 
-        isValid: false, 
-        message: 'Vui lòng nhập Cân nặng và Chiều cao.' 
-      };
-    }
-
-    const weightNum = parseFloat(weight);
-    const heightNum = parseFloat(height);
-
-    if (isNaN(weightNum) || weightNum <= 0 || weightNum > 300) {
-      return { 
-        isValid: false, 
-        message: 'Cân nặng không hợp lệ (0.1-300 kg).' 
-      };
-    }
-
-    if (isNaN(heightNum) || heightNum <= 30 || heightNum > 250) {
-      return { 
-        isValid: false, 
-        message: 'Chiều cao không hợp lệ (30-250 cm).' 
-      };
-    }
-
-    if (bodyFat.trim()) {
-      const bodyFatNum = parseFloat(bodyFat);
-      if (isNaN(bodyFatNum) || bodyFatNum < 0 || bodyFatNum > 100) {
-        return { 
-          isValid: false, 
-          message: 'Tỷ lệ mỡ không hợp lệ (0-100%).' 
-        };
-      }
-    }
-
-    if (muscleMass.trim()) {
-      const muscleMassNum = parseFloat(muscleMass);
-      if (isNaN(muscleMassNum) || muscleMassNum <= 0 || muscleMassNum > 200) {
-        return { 
-          isValid: false, 
-          message: 'Khối lượng cơ không hợp lệ (0-200 kg).' 
-        };
-      }
-    }
-
-    return { isValid: true };
-  };
-
-  // --- 4. SUBMIT HEALTH METRIC ---
-  const handleSubmit = async () => {
-    const validation = validateInput();
-    if (!validation.isValid) {
-      Alert.alert('Dữ liệu không hợp lệ', validation.message);
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const payload: HealthMetricInput = {
-        weightKg: parseFloat(weight),
-        heightCm: parseFloat(height),
-        bodyFatPercent: bodyFat.trim() ? parseFloat(bodyFat) : null,
-        muscleMassKg: muscleMass.trim() ? parseFloat(muscleMass) : null,
-        notes: note.trim() || ''
-      };
-
-      console.log('📤 Submitting Health Metric:', payload);
-      const response = await HealthMetricService.createHealthMetric(payload);
-      
-      console.log('✅ API Response:', response);
-
-      if (response && response.id) {
-        console.log('✅ Created successfully with ID:', response.id);
-        
-        Alert.alert(
-          '🎉 Thành công!', 
-          `Đã lưu hồ sơ sức khỏe!\n\n` +
-          `BMI: ${response.bmi.toFixed(1)}\n` +
-          `BMR: ${Math.round(response.bmr)} kcal\n` +
-          `TDEE: ${Math.round(response.tdee)} kcal`,
-          [{ 
-            text: 'OK', 
-            onPress: () => {
-              setWeight('');
-              setHeight('');
-              setBodyFat('');
-              setMuscleMass('');
-              setNote('');
-              navigation.goBack();
-            }
-          }]
-        );
-      } else {
-        console.warn('⚠️ API returned empty response, fetching latest metric...');
-        
-        const latestMetric = await HealthMetricService.getLatestHealthMetric();
-        
-        if (latestMetric) {
-          console.log('✅ Fetched latest metric:', latestMetric);
-          
-          Alert.alert(
-            '🎉 Thành công!', 
-            `Đã lưu hồ sơ sức khỏe!\n\n` +
-            `BMI: ${latestMetric.bmi.toFixed(1)}\n` +
-            `BMR: ${Math.round(latestMetric.bmr)} kcal\n` +
-            `TDEE: ${Math.round(latestMetric.tdee)} kcal`,
-            [{ 
-              text: 'OK', 
-              onPress: () => {
-                setWeight('');
-                setHeight('');
-                setBodyFat('');
-                setMuscleMass('');
-                setNote('');
-                navigation.goBack();
-              }
-            }]
-          );
-        } else {
-          console.warn('⚠️ Cannot fetch latest metric');
-          Alert.alert(
-            'Thành công', 
-            'Đã lưu hồ sơ sức khỏe!',
-            [{ 
-              text: 'OK', 
-              onPress: () => {
-                setWeight('');
-                setHeight('');
-                setBodyFat('');
-                setMuscleMass('');
-                setNote('');
-                navigation.goBack();
-              }
-            }]
-          );
-        }
-      }
-
-    } catch (error: any) {
-      console.error('❌ Submit Error:', error);
-      const errorMessage = error.message || 'Có lỗi xảy ra khi lưu thông tin.';
-      Alert.alert('Lỗi', errorMessage, [{ text: 'Đóng' }]);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const currentLevelInfo = ActivityLevelService.getActivityLevelInfo(selectedLevel);
+  const RenderError = ({ message }: { message?: string }) => (
+    message ? (
+      <Text style={{ color: ERROR_COLOR, fontSize: 12, marginTop: 4, marginLeft: 4, lineHeight: 16 }}>
+        {message}
+      </Text>
+    ) : null
+  );
 
   return (
-    <View style={styles.container} >
+    <View style={styles.container}>
       <HeaderApp isHome={false} onBackPress={handleBackPress} />
 
       <ScrollView 
@@ -374,15 +181,20 @@ const CreateHealthMetricScreen = () => {
                   <Text style={styles.required}> *</Text>
                 </Text>
                 <TextInput
-                  style={[styles.input, focusedInput === 'weight' && styles.inputFocused]}
+                  style={[
+                    styles.input, 
+                    focusedInput === 'weight' && styles.inputFocused,
+                    errors.weight && { borderColor: ERROR_COLOR }
+                  ]}
                   value={weight}
                   onChangeText={setWeight}
                   placeholder="Ví dụ: 65"
                   placeholderTextColor="#9CA3AF"
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                   onFocus={() => handleFocus('weight')}
                   onBlur={handleBlur}
                 />
+                <RenderError message={errors.weight} />
               </View>
               <View style={styles.halfInput}>
                 <Text style={styles.label}>
@@ -390,15 +202,20 @@ const CreateHealthMetricScreen = () => {
                   <Text style={styles.required}> *</Text>
                 </Text>
                 <TextInput
-                  style={[styles.input, focusedInput === 'height' && styles.inputFocused]}
+                  style={[
+                    styles.input, 
+                    focusedInput === 'height' && styles.inputFocused,
+                    errors.height && { borderColor: ERROR_COLOR }
+                  ]}
                   value={height}
                   onChangeText={setHeight}
                   placeholder="Ví dụ: 170"
                   placeholderTextColor="#9CA3AF"
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                   onFocus={() => handleFocus('height')}
                   onBlur={handleBlur}
                 />
+                <RenderError message={errors.height} />
               </View>
             </View>
 
@@ -409,30 +226,40 @@ const CreateHealthMetricScreen = () => {
                   <Icon name="percent" size={14} color="#6B7280" /> Tỷ lệ mỡ (%)
                 </Text>
                 <TextInput
-                  style={[styles.input, focusedInput === 'bodyFat' && styles.inputFocused]}
+                  style={[
+                    styles.input, 
+                    focusedInput === 'bodyFat' && styles.inputFocused,
+                    errors.bodyFat && { borderColor: ERROR_COLOR }
+                  ]}
                   value={bodyFat}
                   onChangeText={setBodyFat}
                   placeholder="Tùy chọn"
                   placeholderTextColor="#9CA3AF"
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                   onFocus={() => handleFocus('bodyFat')}
                   onBlur={handleBlur}
                 />
+                <RenderError message={errors.bodyFat} />
               </View>
               <View style={styles.halfInput}>
                 <Text style={styles.label}>
                   <Icon name="arm-flex" size={14} color="#6B7280" /> Cơ bắp (kg)
                 </Text>
                 <TextInput
-                  style={[styles.input, focusedInput === 'muscleMass' && styles.inputFocused]}
+                  style={[
+                    styles.input, 
+                    focusedInput === 'muscleMass' && styles.inputFocused,
+                    errors.muscleMass && { borderColor: ERROR_COLOR }
+                  ]}
                   value={muscleMass}
                   onChangeText={setMuscleMass}
                   placeholder="Tùy chọn"
                   placeholderTextColor="#9CA3AF"
-                  keyboardType="numeric"
+                  keyboardType="decimal-pad"
                   onFocus={() => handleFocus('muscleMass')}
                   onBlur={handleBlur}
                 />
+                <RenderError message={errors.muscleMass} />
               </View>
             </View>
 

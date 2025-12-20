@@ -2,9 +2,10 @@
 
 import { API_BASE_URL } from '@env'; 
 import { TokenManager } from './AuthService'; 
+import { getNutrients, NutrientInfo } from './NutrientService'; // Import để lấy đơn vị
 
 // =============================================================================
-// 1. HTTP CLIENT CONFIG (Private Helper)
+// 1. HTTP CLIENT CONFIG & HELPERS
 // =============================================================================
 
 const BASE_URL = `${API_BASE_URL}/api`;
@@ -20,7 +21,6 @@ class ApiException extends Error {
   }
 }
 
-// Hàm wrapper fetch để xử lý Token và Error chung
 const apiClient = {
   async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${BASE_URL}${endpoint}`;
@@ -47,19 +47,15 @@ const apiClient = {
 
       clearTimeout(timeoutId);
 
-      // Xử lý 204 No Content
-      if (response.status === 204) {
-        return {} as T;
-      }
+      if (response.status === 204) return {} as T;
 
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         let message = data.message || `Error ${response.status}`;
         if (data.errors) {
-            // Gom lỗi validation từ backend thành chuỗi
-            const details = Object.values(data.errors).flat().join('\n');
-            message = details || message;
+          const details = Object.values(data.errors).flat().join('\n');
+          message = details || message;
         }
         throw new ApiException(message, response.status, data.errors);
       }
@@ -76,21 +72,71 @@ const apiClient = {
 };
 
 // =============================================================================
-// 2. TYPES & INTERFACES (Synced with Web)
+// 2. UNIT MAPPING LOGIC (Bổ sung đơn vị từ NutrientService)
 // =============================================================================
 
-// --- Core Data ---
+// Biến cache để tránh gọi API /Nutrient liên tục mỗi khi lấy Goal
+let nutrientUnitMapCache: Record<string, string> | null = null;
+
+/**
+ * Lấy bản đồ tra cứu ID -> Unit
+ */
+const getUnitMap = async (): Promise<Record<string, string>> => {
+  if (nutrientUnitMapCache) return nutrientUnitMapCache;
+  
+  try {
+    const nutrients = await getNutrients();
+    const map: Record<string, string> = {};
+    nutrients.forEach((n: NutrientInfo) => {
+      map[n.id] = n.unit;
+    });
+    nutrientUnitMapCache = map;
+    return map;
+  } catch (error) {
+    console.error("Failed to fetch nutrient units:", error);
+    return {};
+  }
+};
+
+/**
+ * Hàm Helper để gắn unit vào các targets trong Health Goal response
+ */
+const enrichGoalData = async <T extends UserHealthGoalResponse | UserHealthGoalResponse[] | null>(data: T): Promise<T> => {
+  if (!data) return data;
+  
+  const unitMap = await getUnitMap();
+
+  const mapUnits = (goal: any) => ({
+    ...goal,
+    targets: goal.targets?.map((target: any) => ({
+      ...target,
+      // Nếu backend chưa có unit, lấy từ map tra cứu theo nutrientId
+      unit: target.unit || unitMap[target.nutrientId] || ''
+    })) || []
+  });
+
+  if (Array.isArray(data)) {
+    return data.map(mapUnits) as any;
+  }
+  return mapUnits(data) as any;
+};
+
+// =============================================================================
+// 3. TYPES & INTERFACES
+// =============================================================================
+
 export interface NutrientTarget {
   nutrientId: string;
   name: string;
+  unit?: string;      // Trường unit đã được bổ sung
   targetType?: string;
   minValue: number;
   medianValue?: number;
   maxValue: number;
-  minEnergyPct?: number;
+  minEnergyPct: number;
   medianEnergyPct?: number;
-  maxEnergyPct?: number;
-  weight?: number;
+  maxEnergyPct: number;
+  weight: number; 
 }
 
 export interface NutrientTargetDto {
@@ -105,58 +151,31 @@ export interface NutrientTargetDto {
   weight?: number;
 }
 
-// --- Responses ---
-export interface HealthGoalResponse {
-  id: string;
-  name: string;
-  description?: string;
-  targets: NutrientTarget[];
-}
-
-export type CustomHealthGoalResponse = HealthGoalResponse;
-
 export interface UserHealthGoalResponse {
   id: string;
-  healthGoalId?: string;       // ID nếu là System Goal
-  customHealthGoalId?: string; // ID nếu là Custom Goal
+  healthGoalId?: string;
+  customHealthGoalId?: string;
   name: string;
   description?: string;
   targets: NutrientTarget[];
-  startedAtUtc?: string;       // ISO Date
-  expiredAtUtc?: string;       // ISO Date (null nếu đang active vĩnh viễn)
+  startedAtUtc?: string;
+  expiredAtUtc?: string;
+  isCustom?: boolean; // Tùy chọn để phân biệt
 }
 
-// --- Requests (DTOs) ---
 export interface CreateHealthGoalRequest {
   name: string;
   description?: string;
   targets: NutrientTargetDto[];
 }
 
-export interface UpdateHealthGoalRequest {
-  name?: string;
-  description?: string;
-  targets?: NutrientTargetDto[];
-}
-
-// Đổi tên cho khớp logic Custom
-export type CreateCustomHealthGoalRequest = CreateHealthGoalRequest;
-export type UpdateCustomHealthGoalRequest = UpdateHealthGoalRequest;
-
-export interface SetUserHealthGoalRequest {
-  type: 'SYSTEM' | 'CUSTOM';
-  expiredAtUtc?: string;
-}
-
 // =============================================================================
-// 3. SERVICE METHODS
+// 4. SERVICE METHODS
 // =============================================================================
 
-// -----------------------------------------------------------------------------
-// A. CustomHealthGoal Service (Quản lý mục tiêu cá nhân)
-// -----------------------------------------------------------------------------
+// --- Quản lý mục tiêu cá nhân (Custom) ---
 
-const createCustom = async (data: CreateCustomHealthGoalRequest) => {
+const createCustom = async (data: CreateHealthGoalRequest) => {
   return apiClient.request<void>('/CustomHealthGoal', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -164,18 +183,20 @@ const createCustom = async (data: CreateCustomHealthGoalRequest) => {
 };
 
 const getMyCustomGoals = async () => {
-  return apiClient.request<CustomHealthGoalResponse[]>('/CustomHealthGoal', {
+  const data = await apiClient.request<UserHealthGoalResponse[]>('/CustomHealthGoal', {
     method: 'GET',
   });
+  return enrichGoalData(data); // Tự động bổ sung unit
 };
 
 const getCustomById = async (id: string) => {
-  return apiClient.request<CustomHealthGoalResponse>(`/CustomHealthGoal/${id}`, {
+  const data = await apiClient.request<UserHealthGoalResponse>(`/CustomHealthGoal/${id}`, {
     method: 'GET',
   });
+  return enrichGoalData(data);
 };
 
-const updateCustom = async (id: string, data: UpdateCustomHealthGoalRequest) => {
+const updateCustom = async (id: string, data: CreateHealthGoalRequest) => {
   return apiClient.request<void>(`/CustomHealthGoal/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
@@ -188,67 +209,34 @@ const deleteCustom = async (id: string) => {
   });
 };
 
-// -----------------------------------------------------------------------------
-// B. HealthGoal Service (Quản lý mục tiêu hệ thống - System)
-// -----------------------------------------------------------------------------
+// --- Quản lý mục tiêu hệ thống (Library) ---
 
-const getAllSystemGoals = async () => {
-  return apiClient.request<HealthGoalResponse[]>('/HealthGoal', {
-    method: 'GET',
-  });
-};
-
-const getSystemById = async (id: string) => {
-  return apiClient.request<HealthGoalResponse>(`/HealthGoal/${id}`, {
-    method: 'GET',
-  });
-};
-
-/**
- * Lấy danh sách tổng hợp (System + Custom) của user hiện tại.
- * Thay thế cho việc phải gọi 2 API riêng biệt.
- */
 const getListGoal = async () => {
-  return apiClient.request<UserHealthGoalResponse[]>('/HealthGoal/listGoal', {
+  const data = await apiClient.request<UserHealthGoalResponse[]>('/HealthGoal/listGoal', {
     method: 'GET',
   });
+  return enrichGoalData(data); // Tự động bổ sung unit
 };
 
-// Các hàm Admin (Create/Update/Delete System Goal) thường ít dùng trên App User
-// Nhưng nếu cần thì thêm vào đây tương tự như CustomHealthGoal
+// --- Trạng thái Active & History ---
 
-// -----------------------------------------------------------------------------
-// C. UserHealthGoal Service (Quản lý trạng thái Active/History)
-// -----------------------------------------------------------------------------
-
-/**
- * Đặt một mục tiêu làm Active Goal.
- * @param goalId - ID của SystemGoal hoặc CustomGoal
- * @param type - 'SYSTEM' hoặc 'CUSTOM'
- * @param expiredAtUtc - Ngày hết hạn (Optional)
- */
 const setAsActiveGoal = async (
   goalId: string, 
   type: 'SYSTEM' | 'CUSTOM', 
   expiredAtUtc?: string
 ) => {
-  const data: SetUserHealthGoalRequest = { type, expiredAtUtc };
   return apiClient.request<void>(`/UserHealthGoal/${goalId}`, {
     method: 'POST',
-    body: JSON.stringify(data),
+    body: JSON.stringify({ type, expiredAtUtc }),
   });
 };
 
-/**
- * Lấy Goal đang active hiện tại. Trả về null nếu chưa có.
- */
 const getCurrentActiveGoal = async (): Promise<UserHealthGoalResponse | null> => {
   try {
-    // API trả về 200 kèm data hoặc 204 (no content)
-    // Nếu backend trả 404 khi không có goal, cần catch lỗi này
-    return await apiClient.request<UserHealthGoalResponse>('/UserHealthGoal/current', {
+    const data = await apiClient.request<UserHealthGoalResponse>('/UserHealthGoal/current', {
       method: 'GET',
     });
+    return enrichGoalData(data); // Tự động bổ sung unit
   } catch (error: any) {
     if (error.status === 404) return null;
     throw error;
@@ -256,14 +244,12 @@ const getCurrentActiveGoal = async (): Promise<UserHealthGoalResponse | null> =>
 };
 
 const getHistory = async () => {
-  return apiClient.request<UserHealthGoalResponse[]>('/UserHealthGoal/history', {
+  const data = await apiClient.request<UserHealthGoalResponse[]>('/UserHealthGoal/history', {
     method: 'GET',
   });
+  return enrichGoalData(data);
 };
 
-/**
- * Hủy bỏ mục tiêu hiện tại (Không cần truyền ID)
- */
 const removeCurrentActiveGoal = async () => {
   return apiClient.request<void>('/UserHealthGoal', {
     method: 'DELETE',
@@ -271,23 +257,16 @@ const removeCurrentActiveGoal = async () => {
 };
 
 // =============================================================================
-// 4. EXPORT
+// 5. EXPORT
 // =============================================================================
 
 export const healthGoalService = {
-  // --- Custom Goals ---
   createCustom,
   getMyCustomGoals,
   getCustomById,
   updateCustom,
   deleteCustom,
-
-  // --- System Goals ---
-  getAllSystemGoals,
-  getSystemById,
-  getListGoal, // Quan trọng: lấy list tổng hợp cho dropdown
-
-  // --- User Active Goals ---
+  getListGoal,
   setAsActiveGoal,
   getCurrentActiveGoal,
   getHistory,

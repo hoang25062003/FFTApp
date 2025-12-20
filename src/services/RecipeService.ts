@@ -67,12 +67,14 @@ export interface RecipeIngredient {
   ingredientId?: string;
   name: string;
   quantityGram: number;
+  restrictionType?: string | null; // ✅ THÊM
 }
 
 export interface RecipeLabel {
   id: string;
   name: string;
   colorCode: string;
+  lastUpdatedUtc?: string; // ✅ THÊM
 }
 
 export interface CookingStepImageDetail {
@@ -133,6 +135,7 @@ export interface RecipeDetail {
     lastName: string;
     email: string;
     avatarUrl?: string;
+    userName?: string; // ✅ THÊM
   };
   isFavorited?: boolean;
   isSaved?: boolean;
@@ -144,6 +147,7 @@ export interface RecipeDetail {
   createdAt?: string;
   updatedAt?: string;
   parent?: RecipeParent;
+  viewCount?: number; // ✅ THÊM
 }
 
 export type RecipeIngredientPayload = {
@@ -545,7 +549,7 @@ export async function getMyRecipes(params?: MyRecipesParams): Promise<MyRecipeRe
     Title: params?.title,
   });
 
-  const endpoint = queryParams.toString() ? `/Recipe/myRecipe?${queryParams.toString()}` : '/Recipe/myRecipe';
+  const endpoint = queryParams.toString() ? `/Recipe/my?${queryParams.toString()}` : '/Recipe/my';
   const result = await recipeHttpClient.request<MyRecipeResponse>(endpoint, { method: 'GET' }, true);
   recipeCache.set(cacheKey, result);
   return result;
@@ -729,6 +733,7 @@ export async function searchRecipes(params?: RecipeSearchParams): Promise<MyReci
   recipeCache.set(cacheKey, result);
   return result;
 }
+
 export async function shareRecipe(recipeId: string, recipeName?: string): Promise<void> {
   if (!recipeId) throw new Error('Recipe ID is required');
 
@@ -746,6 +751,7 @@ export async function shareRecipe(recipeId: string, recipeName?: string): Promis
     Alert.alert('Lỗi', 'Không thể chia sẻ: ' + error.message);
   }
 }
+
 // ========== COPY RECIPE ==========
 
 export async function copyRecipe(

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -12,92 +12,38 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { NewPasswordScreenNavigationProps } from '../../navigation/NavigationTypes';
-import { AuthRoutes } from '../../navigation/RouteNames';
 import { styles } from './NewPasswordScreenStyles';
+import { useNewPassword } from '../../hooks/useNewPassword';
+
+const BRAND_COLOR = '#8BC34A';
 
 type Props = NewPasswordScreenNavigationProps;
 
 const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
-  const BRAND_COLOR = '#8BC34A';
-
-  // Get params from navigation
   const params = route.params as any;
   const email = params?.email || '';
-  const code = params?.code || '';
+  const token = params?.token || '';
 
-  // State
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [newPasswordError, setNewPasswordError] = useState('');
-  const [confirmPasswordError, setConfirmPasswordError] = useState('');
-  const [isSuccess, setIsSuccess] = useState(false);
+  const {
+    newPassword,
+    confirmPassword,
+    showNewPassword,
+    showConfirmPassword,
+    isLoading,
+    newPasswordError,
+    confirmPasswordError,
+    isSuccess,
+    setShowNewPassword,
+    setShowConfirmPassword,
+    handleNewPasswordChange,
+    handleConfirmPasswordChange,
+    handleResetPassword,
+    handleBackToLogin,
+    handleGoBack,
+    getPasswordValidation,
+  } = useNewPassword(navigation, email, token);
 
-  const validatePassword = (password: string): string => {
-    if (!password) {
-      return 'Vui lòng nhập mật khẩu';
-    }
-    if (password.length < 8) {
-      return 'Mật khẩu phải có ít nhất 8 ký tự';
-    }
-    if (!/(?=.*[a-z])/.test(password)) {
-      return 'Mật khẩu phải chứa ít nhất 1 chữ thường';
-    }
-    if (!/(?=.*[A-Z])/.test(password)) {
-      return 'Mật khẩu phải chứa ít nhất 1 chữ hoa';
-    }
-    if (!/(?=.*\d)/.test(password)) {
-      return 'Mật khẩu phải chứa ít nhất 1 chữ số';
-    }
-    return '';
-  };
-
-  const handleResetPassword = async () => {
-    if (isLoading) return;
-
-    // Validate
-    const newPasswordValidation = validatePassword(newPassword);
-    if (newPasswordValidation) {
-      setNewPasswordError(newPasswordValidation);
-      return;
-    }
-
-    if (!confirmPassword) {
-      setConfirmPasswordError('Vui lòng xác nhận mật khẩu');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setConfirmPasswordError('Mật khẩu không khớp');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // TODO: Call API to reset password
-      // await resetPassword({ email, code, newPassword });
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Show success screen
-      setIsSuccess(true);
-    } catch (error) {
-      setNewPasswordError('Không thể đặt lại mật khẩu. Vui lòng thử lại sau');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleBackToLogin = () => {
-    navigation.navigate(AuthRoutes.Login);
-  };
-
-  const handleGoBack = () => {
-    navigation.goBack();
-  };
+  const passwordValidation = getPasswordValidation();
 
   // Success Screen
   if (isSuccess) {
@@ -150,30 +96,6 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
             </View>
           </View>
 
-          {/* Progress Indicator */}
-          <View style={styles.progressContainer}>
-            <View style={styles.progressStep}>
-              <View style={styles.progressCircleCompleted}>
-                <Icon name="check" size={20} color="#FFFFFF" />
-              </View>
-              <Text style={styles.progressStepNumber}>1</Text>
-            </View>
-            <View style={styles.progressLineActive} />
-            <View style={styles.progressStep}>
-              <View style={styles.progressCircleCompleted}>
-                <Icon name="check" size={20} color="#FFFFFF" />
-              </View>
-              <Text style={styles.progressStepNumber}>2</Text>
-            </View>
-            <View style={styles.progressLineActive} />
-            <View style={styles.progressStep}>
-              <View style={styles.progressCircleActive}>
-                <Icon name="lock" size={20} color="#FFFFFF" />
-              </View>
-              <Text style={styles.progressStepNumber}>3</Text>
-            </View>
-          </View>
-
           {/* Form Card */}
           <View style={styles.formCard}>
             <View style={styles.cardHeader}>
@@ -198,10 +120,7 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                   placeholder="Nhập mật khẩu mới"
                   placeholderTextColor="#9CA3AF"
                   value={newPassword}
-                  onChangeText={(text) => {
-                    setNewPassword(text);
-                    if (newPasswordError) setNewPasswordError('');
-                  }}
+                  onChangeText={handleNewPasswordChange}
                   secureTextEntry={!showNewPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -241,10 +160,7 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
                   placeholder="Xác nhận mật khẩu mới"
                   placeholderTextColor="#9CA3AF"
                   value={confirmPassword}
-                  onChangeText={(text) => {
-                    setConfirmPassword(text);
-                    if (confirmPasswordError) setConfirmPasswordError('');
-                  }}
+                  onChangeText={handleConfirmPasswordChange}
                   secureTextEntry={!showConfirmPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -274,33 +190,33 @@ const NewPasswordScreen: React.FC<Props> = ({ navigation, route }) => {
               <Text style={styles.requirementsTitle}>Yêu cầu mật khẩu:</Text>
               <View style={styles.requirementItem}>
                 <Icon 
-                  name={newPassword.length >= 8 ? "check-circle" : "circle-outline"} 
+                  name={passwordValidation.minLength ? "check-circle" : "circle-outline"} 
                   size={16} 
-                  color={newPassword.length >= 8 ? BRAND_COLOR : "#9CA3AF"} 
+                  color={passwordValidation.minLength ? BRAND_COLOR : "#9CA3AF"} 
                 />
                 <Text style={styles.requirementText}>Ít nhất 8 ký tự</Text>
               </View>
               <View style={styles.requirementItem}>
                 <Icon 
-                  name={/(?=.*[a-z])/.test(newPassword) ? "check-circle" : "circle-outline"} 
+                  name={passwordValidation.hasLowerCase ? "check-circle" : "circle-outline"} 
                   size={16} 
-                  color={/(?=.*[a-z])/.test(newPassword) ? BRAND_COLOR : "#9CA3AF"} 
+                  color={passwordValidation.hasLowerCase ? BRAND_COLOR : "#9CA3AF"} 
                 />
                 <Text style={styles.requirementText}>Một chữ thường</Text>
               </View>
               <View style={styles.requirementItem}>
                 <Icon 
-                  name={/(?=.*[A-Z])/.test(newPassword) ? "check-circle" : "circle-outline"} 
+                  name={passwordValidation.hasUpperCase ? "check-circle" : "circle-outline"} 
                   size={16} 
-                  color={/(?=.*[A-Z])/.test(newPassword) ? BRAND_COLOR : "#9CA3AF"} 
+                  color={passwordValidation.hasUpperCase ? BRAND_COLOR : "#9CA3AF"} 
                 />
                 <Text style={styles.requirementText}>Một chữ hoa</Text>
               </View>
               <View style={styles.requirementItem}>
                 <Icon 
-                  name={/(?=.*\d)/.test(newPassword) ? "check-circle" : "circle-outline"} 
+                  name={passwordValidation.hasNumber ? "check-circle" : "circle-outline"} 
                   size={16} 
-                  color={/(?=.*\d)/.test(newPassword) ? BRAND_COLOR : "#9CA3AF"} 
+                  color={passwordValidation.hasNumber ? BRAND_COLOR : "#9CA3AF"} 
                 />
                 <Text style={styles.requirementText}>Một chữ số</Text>
               </View>

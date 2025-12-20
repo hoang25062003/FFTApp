@@ -15,6 +15,7 @@ import ProfileScreen from '../screens/Profile/ProfileScreen';
 import ListFollowScreen from '../screens/Follow/ListFollowScreen';
 import IngredientsScreen from '../screens/Ingredients/IngredientsScreen';
 import NotificationScreen from '../screens/Notification/NotificationScreen';
+import EditRecipeScreen from '../screens/Recipe/EditRecipeScreen';
 const RootStack = createNativeStackNavigator();
 
 const RootNavigator: React.FC = () => {
@@ -136,6 +137,15 @@ const RootNavigator: React.FC = () => {
                 <RootStack.Screen 
                     name="NotificationScreen" 
                     component={NotificationScreen}
+                    options={{
+                        presentation: 'card',
+                        animation: 'slide_from_right',
+                        gestureEnabled: true,
+                    }}
+                />
+                <RootStack.Screen 
+                    name="EditRecipe" 
+                    component={EditRecipeScreen}
                     options={{
                         presentation: 'card',
                         animation: 'slide_from_right',

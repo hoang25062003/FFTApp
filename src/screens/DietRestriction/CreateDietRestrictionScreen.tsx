@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
     View,
     Text,
@@ -6,72 +6,53 @@ import {
     TextInput,
     ScrollView,
     Platform,
-    Keyboard,
     Modal,
     FlatList,
     ActivityIndicator,
-    Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import HeaderApp from '../../components/HeaderApp';
 
-// Import Services
-import IngredientService, { Ingredient } from '../../services/IngredientService';
-import IngredientCategoryService, { IngredientCategory } from '../../services/IngredientCategoryService';
-import DietRestrictionService, { 
-    createIngredientRestriction, 
-    createIngredientCategoryRestriction,
-    RestrictionType as ApiRestrictionType
-} from '../../services/DietRestrictionService';
-
-// Import styles
-import { styles, BRAND_COLOR } from './CreateDietRestrictionScreenStyles';
-
-// Khai báo Types
-type TabType = 'ingredient' | 'group';
-type RestrictionType = 'ALLERGY' | 'DISLIKE' | 'TEMPORARYAVOID';
-
-// Type chung cho item được chọn
-type SelectionItem = {
-    id: string;
-    name: string;
-    type: 'INGREDIENT' | 'LABEL';
-};
+import { useCreateDietRestriction } from '../../hooks/useCreateDietRestriction';
+import { styles, BRAND_COLOR, ERROR_COLOR } from './CreateDietRestrictionScreenStyles';
 
 const CreateRestrictionScreen = () => {
     const navigation = useNavigation();
-    
-    // Form State
-    const [activeTab, setActiveTab] = useState<TabType>('ingredient');
-    const [restrictionType, setRestrictionType] = useState<RestrictionType>('ALLERGY');
-    const [note, setNote] = useState('');
-    const [date, setDate] = useState(new Date());
-    
-    // Selection State
-    const [selectedItem, setSelectedItem] = useState<SelectionItem | null>(null);
-
-    // Modal & Data State
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [showTypeDropdown, setShowTypeDropdown] = useState(false);
-    
-    // State cho Modal chọn Nguyên liệu/Nhóm
-    const [showSelectionModal, setShowSelectionModal] = useState(false);
-    const [listData, setListData] = useState<(Ingredient | IngredientCategory)[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    
-    // State cho loading khi submit
-    const [isSaving, setIsSaving] = useState(false);
-
-    // Reset selected item khi đổi tab
-    useEffect(() => {
-        setSelectedItem(null);
-        setSearchQuery('');
-        setListData([]);
-    }, [activeTab]);
+    const {
+        scrollViewRef,
+        activeTab,
+        restrictionType,
+        note,
+        date,
+        selectedItem,
+        showDatePicker,
+        showTypeDropdown,
+        showSelectionModal,
+        focusedField,
+        listData,
+        isLoading,
+        searchQuery,
+        isSaving,
+        errors,
+        setNote,
+        setShowDatePicker,
+        setShowTypeDropdown,
+        setShowSelectionModal,
+        setSearchQuery,
+        handleTabChange,
+        handleFocus,
+        handleBlur,
+        handleOpenSelection,
+        handleSelectItem,
+        handleTypeSelect,
+        handleDateChange,
+        handleSave,
+        formatDate,
+        getRestrictionConfig,
+    } = useCreateDietRestriction(navigation);
 
     const handleBackPress = () => {
         if (navigation.canGoBack()) {
@@ -79,135 +60,13 @@ const CreateRestrictionScreen = () => {
         }
     };
 
-    // GỌI API LẤY DANH SÁCH
-    const fetchSelectionData = async () => {
-        setIsLoading(true);
-        setListData([]);
-        try {
-            if (activeTab === 'ingredient') {
-                // ✅ Ingredient có phân trang, trả về { items, pageNumber, ... }
-                const data = await IngredientService.getIngredients();
-                setListData(data.items || []); 
-            } else {
-                // ✅ IngredientCategory KHÔNG có phân trang, trả về mảng trực tiếp
-                const data = await IngredientCategoryService.getIngredientCategories();
-                setListData(data || []);
-            }
-        } catch (error) {
-            console.error('Lỗi lấy dữ liệu:', error);
-            Alert.alert('Lỗi', 'Không thể tải danh sách dữ liệu. Vui lòng thử lại.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleOpenSelection = () => {
-        Keyboard.dismiss();
-        setShowSelectionModal(true);
-        fetchSelectionData();
-    };
-
-    const handleSelectItem = (item: Ingredient | IngredientCategory) => {
-        setSelectedItem({
-            id: item.id,
-            name: item.name,
-            type: activeTab === 'ingredient' ? 'INGREDIENT' : 'LABEL'
-        });
-        setShowSelectionModal(false);
-        setSearchQuery('');
-    };
-
-    // Lọc dữ liệu client-side
-    const filteredData = listData.filter(item => 
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const RenderError = ({ field }: { field: keyof typeof errors }) => (
+        errors[field] ? (
+            <Text style={styles.errorText}>
+                {errors[field]}
+            </Text>
+        ) : null
     );
-
-    // ✅ LOGIC SAVE - TÍCH HỢP API
-    const handleSave = async () => {
-        Keyboard.dismiss();
-        setShowTypeDropdown(false);
-
-        // Validate
-        if (!selectedItem) {
-            Alert.alert(
-                'Thiếu thông tin', 
-                `Vui lòng chọn ${activeTab === 'ingredient' ? 'nguyên liệu' : 'nhóm thực phẩm'}.`
-            );
-            return;
-        }
-
-        setIsSaving(true);
-
-        try {
-            // Chuẩn bị expiredAtUtc (chỉ có khi là TEMPORARYAVOID)
-            const expiredAtUtc = restrictionType === 'TEMPORARYAVOID' 
-                ? date.toISOString() 
-                : undefined;
-
-            if (activeTab === 'ingredient') {
-                // ✅ GỌI API TẠO RESTRICTION CHO NGUYÊN LIỆU
-                await createIngredientRestriction({
-                    ingredientId: selectedItem.id,
-                    type: restrictionType as ApiRestrictionType,
-                    notes: note.trim() || undefined,
-                    expiredAtUtc: expiredAtUtc
-                });
-            } else {
-                // ✅ GỌI API TẠO RESTRICTION CHO NHÓM THỰC PHẨM (LABEL/CATEGORY)
-                await createIngredientCategoryRestriction({
-                    ingredientCategoryId: selectedItem.id,
-                    type: restrictionType as ApiRestrictionType,
-                    notes: note.trim() || undefined,
-                    expiredAtUtc: expiredAtUtc
-                });
-            }
-
-            // Thành công
-            Alert.alert(
-                'Thành công', 
-                `Đã thêm hạn chế cho ${selectedItem.name}`,
-                [
-                    {
-                        text: 'OK',
-                        onPress: () => {
-                            // Reset form hoặc quay lại màn hình trước
-                            if (navigation.canGoBack()) {
-                                navigation.goBack();
-                            }
-                        }
-                    }
-                ]
-            );
-
-        } catch (error: any) {
-            console.error('Lỗi khi tạo restriction:', error);
-            Alert.alert(
-                'Lỗi', 
-                error?.message || 'Không thể thêm hạn chế. Vui lòng thử lại.'
-            );
-        } finally {
-            setIsSaving(false);
-        }
-    };
-
-    // Date Picker handlers
-    const onChangeDate = (event: DateTimePickerEvent, selectedDate?: Date) => {
-        const currentDate = selectedDate || date;
-        if (Platform.OS === 'android') setShowDatePicker(false);
-        if (selectedDate) setDate(currentDate);
-    };
-
-    const formatDate = (rawDate: Date) => {
-        return `${rawDate.getDate().toString().padStart(2, '0')} thg ${(rawDate.getMonth() + 1)}, ${rawDate.getFullYear()}`;
-    };
-
-    const getRestrictionConfig = (type: RestrictionType) => {
-        switch (type) {
-            case 'ALLERGY': return { label: 'Dị ứng', icon: 'alert-circle-outline', color: '#EF4444', bg: '#FEF2F2' };
-            case 'DISLIKE': return { label: 'Không thích', icon: 'thumb-down-outline', color: '#F59E0B', bg: '#FFFBEB' };
-            case 'TEMPORARYAVOID': return { label: 'Tạm tránh', icon: 'clock-time-four-outline', color: '#8B5CF6', bg: '#FAF5FF' };
-        }
-    };
 
     return (
         <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -215,6 +74,7 @@ const CreateRestrictionScreen = () => {
 
             <View style={styles.innerContainer}>
                 <ScrollView
+                    ref={scrollViewRef}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 40 }}
                     keyboardDismissMode="on-drag"
@@ -242,14 +102,14 @@ const CreateRestrictionScreen = () => {
                         <View style={styles.tabContainer}>
                             <TouchableOpacity
                                 style={[styles.tabItem, activeTab === 'ingredient' && styles.activeTabItem]}
-                                onPress={() => setActiveTab('ingredient')}
+                                onPress={() => handleTabChange('ingredient')}
                             >
                                 <Icon name="food-apple-outline" size={20} color={activeTab === 'ingredient' ? '#FFFFFF' : '#6B7280'} />
                                 <Text style={[styles.tabText, activeTab === 'ingredient' && styles.activeTabText]}>Nguyên liệu</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 style={[styles.tabItem, activeTab === 'group' && styles.activeTabItem]}
-                                onPress={() => setActiveTab('group')}
+                                onPress={() => handleTabChange('group')}
                             >
                                 <Icon name="food-variant" size={20} color={activeTab === 'group' ? '#FFFFFF' : '#6B7280'} />
                                 <Text style={[styles.tabText, activeTab === 'group' && styles.activeTabText]}>Nhóm thực phẩm</Text>
@@ -262,7 +122,11 @@ const CreateRestrictionScreen = () => {
                         {/* SECTION 1: CHỌN NGUYÊN LIỆU / NHÓM */}
                         <View style={styles.formSection}>
                             <View style={styles.labelContainer}>
-                                <Icon name="food" size={18} color={BRAND_COLOR} />
+                                <Icon 
+                                    name="food" 
+                                    size={18} 
+                                    color={errors.item ? ERROR_COLOR : (focusedField === 'item' ? BRAND_COLOR : BRAND_COLOR)} 
+                                />
                                 <Text style={styles.label}>
                                     {activeTab === 'ingredient' ? 'Chọn nguyên liệu' : 'Chọn nhóm thực phẩm'}
                                 </Text>
@@ -270,7 +134,11 @@ const CreateRestrictionScreen = () => {
                             </View>
                             
                             <TouchableOpacity 
-                                style={[styles.inputBox, !selectedItem && { borderColor: '#E5E7EB' }]}
+                                style={[
+                                    styles.inputBox,
+                                    focusedField === 'item' && styles.inputBoxFocused,
+                                    errors.item && styles.inputBoxError
+                                ]}
                                 onPress={handleOpenSelection}
                             >
                                 {selectedItem ? (
@@ -282,8 +150,13 @@ const CreateRestrictionScreen = () => {
                                         {activeTab === 'ingredient' ? 'Nhấn để tìm nguyên liệu...' : 'Nhấn để chọn nhóm...'}
                                     </Text>
                                 )}
-                                <Icon name="chevron-down" size={20} color={BRAND_COLOR} />
+                                <Icon 
+                                    name="chevron-down" 
+                                    size={20} 
+                                    color={errors.item ? ERROR_COLOR : BRAND_COLOR} 
+                                />
                             </TouchableOpacity>
+                            <RenderError field="item" />
                         </View>
 
                         <View style={styles.divider} />
@@ -291,13 +164,23 @@ const CreateRestrictionScreen = () => {
                         {/* SECTION 2: LOẠI HẠN CHẾ */}
                         <View style={styles.formSection}>
                             <View style={styles.labelContainer}>
-                                <Icon name="tag-outline" size={18} color={BRAND_COLOR} />
+                                <Icon 
+                                    name="tag-outline" 
+                                    size={18} 
+                                    color={focusedField === 'type' ? BRAND_COLOR : BRAND_COLOR} 
+                                />
                                 <Text style={styles.label}>Loại hạn chế</Text>
                                 <Text style={styles.required}>*</Text>
                             </View>
                             <TouchableOpacity
-                                style={styles.inputBox}
-                                onPress={() => { Keyboard.dismiss(); setShowTypeDropdown(!showTypeDropdown); }}
+                                style={[
+                                    styles.inputBox,
+                                    focusedField === 'type' && styles.inputBoxFocused
+                                ]}
+                                onPress={() => {
+                                    handleFocus('type');
+                                    setShowTypeDropdown(!showTypeDropdown);
+                                }}
                             >
                                 <View style={styles.typeDisplayContainer}>
                                     <View style={[styles.typeIconBadge, { backgroundColor: getRestrictionConfig(restrictionType).bg }]}>
@@ -310,13 +193,13 @@ const CreateRestrictionScreen = () => {
 
                             {showTypeDropdown && (
                                 <View style={styles.dropdownList}>
-                                    {(['ALLERGY', 'DISLIKE', 'TEMPORARYAVOID'] as RestrictionType[]).map((type) => {
+                                    {(['ALLERGY', 'DISLIKE', 'TEMPORARYAVOID'] as const).map((type) => {
                                         const config = getRestrictionConfig(type);
                                         return (
                                             <TouchableOpacity
                                                 key={type}
                                                 style={styles.dropdownItem}
-                                                onPress={() => { setRestrictionType(type); setShowTypeDropdown(false); }}
+                                                onPress={() => handleTypeSelect(type)}
                                             >
                                                 <View style={[styles.typeIconBadge, { backgroundColor: config.bg }]}>
                                                     <Icon name={config.icon} size={16} color={config.color} />
@@ -336,21 +219,41 @@ const CreateRestrictionScreen = () => {
                                 <View style={styles.divider} />
                                 <View style={styles.formSection}>
                                     <View style={styles.labelContainer}>
-                                        <Icon name="calendar-clock" size={18} color={BRAND_COLOR} />
+                                        <Icon 
+                                            name="calendar-clock" 
+                                            size={18} 
+                                            color={errors.date ? ERROR_COLOR : (focusedField === 'date' ? BRAND_COLOR : BRAND_COLOR)} 
+                                        />
                                         <Text style={styles.label}>Ngày hết hạn</Text>
                                         <Text style={styles.required}>*</Text>
                                     </View>
-                                    <TouchableOpacity style={styles.inputBox} onPress={() => setShowDatePicker(true)}>
+                                    <TouchableOpacity 
+                                        style={[
+                                            styles.inputBox,
+                                            focusedField === 'date' && styles.inputBoxFocused,
+                                            errors.date && styles.inputBoxError
+                                        ]} 
+                                        onPress={() => {
+                                            handleFocus('date');
+                                            setShowDatePicker(true);
+                                        }}
+                                    >
                                         <Text style={styles.inputText}>{formatDate(date)}</Text>
-                                        <Icon name="calendar-outline" size={20} color={BRAND_COLOR} />
+                                        <Icon 
+                                            name="calendar-outline" 
+                                            size={20} 
+                                            color={errors.date ? ERROR_COLOR : BRAND_COLOR} 
+                                        />
                                     </TouchableOpacity>
+                                    <RenderError field="date" />
                                     {showDatePicker && Platform.OS === 'android' && (
                                         <DateTimePicker 
                                             value={date} 
                                             mode="date" 
                                             is24Hour={true} 
                                             display="default" 
-                                            onChange={onChangeDate} 
+                                            onChange={handleDateChange}
+                                            minimumDate={new Date()}
                                         />
                                     )}
                                 </View>
@@ -364,9 +267,12 @@ const CreateRestrictionScreen = () => {
                             <View style={styles.labelContainer}>
                                 <Icon name="note-text-outline" size={18} color={BRAND_COLOR} />
                                 <Text style={styles.label}>Ghi chú</Text>
-                                <Text style={styles.optional}>(tuỳ chọn)</Text>
+                                <Text style={styles.optional}>(tùy chọn)</Text>
                             </View>
-                            <View style={styles.textAreaContainer}>
+                            <View style={[
+                                styles.textAreaContainer,
+                                focusedField === 'note' && styles.textAreaContainerFocused
+                            ]}>
                                 <TextInput
                                     style={styles.textArea}
                                     multiline
@@ -374,6 +280,8 @@ const CreateRestrictionScreen = () => {
                                     placeholderTextColor="#9CA3AF"
                                     value={note}
                                     onChangeText={setNote}
+                                    onFocus={() => handleFocus('note')}
+                                    onBlur={handleBlur}
                                     maxLength={255}
                                 />
                             </View>
@@ -422,7 +330,10 @@ const CreateRestrictionScreen = () => {
                 visible={showSelectionModal}
                 animationType="slide"
                 transparent={true}
-                onRequestClose={() => setShowSelectionModal(false)}
+                onRequestClose={() => {
+                    setShowSelectionModal(false);
+                    handleBlur();
+                }}
             >
                 <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
                     <View style={{ backgroundColor: 'white', borderTopLeftRadius: 20, borderTopRightRadius: 20, height: '80%', padding: 20 }}>
@@ -432,7 +343,10 @@ const CreateRestrictionScreen = () => {
                             <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#111827' }}>
                                 {activeTab === 'ingredient' ? 'Tìm kiếm nguyên liệu' : 'Chọn nhóm thực phẩm'}
                             </Text>
-                            <TouchableOpacity onPress={() => setShowSelectionModal(false)}>
+                            <TouchableOpacity onPress={() => {
+                                setShowSelectionModal(false);
+                                handleBlur();
+                            }}>
                                 <Icon name="close" size={24} color="#6B7280" />
                             </TouchableOpacity>
                         </View>
@@ -465,7 +379,7 @@ const CreateRestrictionScreen = () => {
                             </View>
                         ) : (
                             <FlatList
-                                data={filteredData}
+                                data={listData}
                                 keyExtractor={(item) => item.id}
                                 showsVerticalScrollIndicator={false}
                                 ListEmptyComponent={

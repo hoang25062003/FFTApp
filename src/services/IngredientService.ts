@@ -1,5 +1,3 @@
-// FILE: src/services/IngredientService.ts
-
 import { API_BASE_URL } from '@env';
 import { TokenManager, ApiException } from './AuthService';
 
@@ -10,7 +8,7 @@ const BASE_URL = `${API_BASE_URL}/api`;
 const REQUEST_TIMEOUT = 30000; // 30 seconds
 
 // ============================================
-// TYPES (ĐÃ CẬP NHẬT)
+// TYPES
 // ============================================
 
 // Type chung cho Category
@@ -29,19 +27,17 @@ export interface Nutrient {
 }
 
 // 1. Type cho item trong DANH SÁCH (List Item)
-// API trả về 'categoryNames' ở danh sách
 export interface Ingredient {
   id: string;
   name: string;
   description?: string;
   imageUrl?: string; 
-  categoryNames: Category[]; // ✅ Yêu cầu của bạn
+  categoryNames: Category[]; 
   isNew: boolean;
   lastUpdatedUtc: string;
 }
 
 // 2. Type cho CHI TIẾT (Details)
-// API trả về 'categories' ở chi tiết
 export interface IngredientDetail {
   id: string;
   name: string;
@@ -49,8 +45,8 @@ export interface IngredientDetail {
   imageUrl: string;
   lastUpdatedUtc: string;
   isNew: boolean;
-  categories: Category[];    // ✅ Yêu cầu của bạn
-  nutrients: Nutrient[];     // ✅ Thêm thông tin dinh dưỡng
+  categories: Category[];    
+  nutrients: Nutrient[];     
 }
 
 // 3. Cấu trúc phản hồi phân trang
@@ -60,6 +56,12 @@ export interface PaginatedIngredients {
   pageSize: number;
   totalCount: number;
   totalPages: number;
+}
+
+// 4. Type cho kết quả từ USDA (MỚI)
+export interface UsdaIngredient {
+  id: string;
+  name: string;
 }
 
 // ============================================
@@ -100,8 +102,6 @@ class IngredientHttpClient {
         includeAuth: boolean = false
     ): Promise<T> {
         const url = `${this.baseUrl}${endpoint}`; 
-
-        console.log(`[HTTP CLIENT] Request: ${options.method || 'GET'} ${url}`);
         
         const headers: Record<string, string> = {
             'Content-Type': 'application/json',
@@ -162,10 +162,7 @@ const ingredientHttpClient = new IngredientHttpClient(BASE_URL);
 // ============================================
 
 /**
- * Lấy danh sách nguyên liệu có phân trang và tìm kiếm
- * @param pageNumber Trang hiện tại (mặc định 1)
- * @param pageSize Số lượng item/trang (mặc định 20)
- * @param search Từ khóa tìm kiếm (tùy chọn)
+ * Lấy danh sách nguyên liệu có phân trang và tìm kiếm nội bộ
  */
 export async function getIngredients(
     pageNumber: number = 1,
@@ -180,7 +177,6 @@ export async function getIngredients(
         queryParams.append('Keyword', search);
     }
 
-    // URLSearchParams.toString() sẽ tự động mã hóa ký tự đặc biệt
     return ingredientHttpClient.request<PaginatedIngredients>(
         `/Ingredient?${queryParams.toString()}`, 
         { method: 'GET' }, 
@@ -190,7 +186,6 @@ export async function getIngredients(
 
 /**
  * Lấy chi tiết một nguyên liệu theo ID
- * @param id ID của nguyên liệu
  */
 export async function getIngredientById(id: string): Promise<IngredientDetail> {
     if (!id) throw new Error("Ingredient ID is required");
@@ -202,8 +197,26 @@ export async function getIngredientById(id: string): Promise<IngredientDetail> {
     );
 }
 
+/**
+ * Lấy dữ liệu nguyên liệu từ nguồn USDA (MỚI CẬP NHẬT)
+ * @param keyword Từ khóa tìm kiếm (VD: "Khoai")
+ */
+export async function getUsdaIngredients(keyword: string): Promise<UsdaIngredient[]> {
+    if (!keyword || keyword.trim() === '') return [];
+
+    const queryParams = new URLSearchParams();
+    queryParams.append('keyword', keyword);
+
+    return ingredientHttpClient.request<UsdaIngredient[]>(
+        `/Ingredient/usda?${queryParams.toString()}`,
+        { method: 'GET' },
+        true
+    );
+}
+
 // Export object mặc định để dễ import
 export default {
     getIngredients,
     getIngredientById,
+    getUsdaIngredients,
 };

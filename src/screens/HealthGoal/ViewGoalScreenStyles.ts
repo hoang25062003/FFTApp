@@ -15,30 +15,136 @@ export const cardStyles = StyleSheet.create({
     shadowOpacity: 0.05, 
     shadowRadius: 8,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  infoContainer: { flex: 1, marginRight: 12 },
-  goalName: { fontSize: 16, fontWeight: '700', color: '#1F2937', marginBottom: 4 },
-  goalDesc: { fontSize: 13, color: '#6B7280', fontWeight: '500' },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  iconButton: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F0F9FF', justifyContent: 'center', alignItems: 'center' },
-  iconButtonDanger: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center' },
-  expandBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F9FAFB', justifyContent: 'center', alignItems: 'center' },
-  detailsContainer: { marginTop: 16 },
-  divider: { height: 1, backgroundColor: '#F3F4F6', marginBottom: 16 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  detailLabel: { fontSize: 11, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5 },
-  nutrientList: { gap: 10 },
-  nutrientItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', padding: 12, borderRadius: 12, gap: 12 },
-  nutrientIconBg: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0F9FF', justifyContent: 'center', alignItems: 'center' },
-  nutrientLabel: { fontSize: 14, fontWeight: '600', color: '#1F2937' },
-  nutrientValue: { fontSize: 13, color: BRAND_COLOR, fontWeight: '700' },
-  priorityBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, minWidth: 50, alignItems: 'center' },
-  priorityText: { fontSize: 11, fontWeight: '700' },
+  headerRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between' 
+  },
+  infoContainer: { 
+    flex: 1, 
+    marginRight: 12 
+  },
+  goalName: { 
+    fontSize: 16, 
+    fontWeight: '700', 
+    color: '#1F2937', 
+    marginBottom: 4 
+  },
+  goalDesc: { 
+    fontSize: 13, 
+    color: '#6B7280', 
+    fontWeight: '500' 
+  },
+  actions: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8 
+  },
+  iconButton: { 
+    width: 32, 
+    height: 32, 
+    borderRadius: 16, 
+    backgroundColor: '#F0F9FF', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  iconButtonDanger: { 
+    width: 32, 
+    height: 32, 
+    borderRadius: 16, 
+    backgroundColor: '#FEF2F2', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  expandBtn: { 
+    width: 32, 
+    height: 32, 
+    borderRadius: 16, 
+    backgroundColor: '#F9FAFB', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  detailsContainer: { 
+    marginTop: 16 
+  },
+  divider: { 
+    height: 1, 
+    backgroundColor: '#F3F4F6', 
+    marginBottom: 16 
+  },
+  sectionHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8, 
+    marginBottom: 12 
+  },
+  detailLabel: { 
+    fontSize: 11, 
+    fontWeight: '700', 
+    color: '#6B7280', 
+    letterSpacing: 0.5 
+  },
+  nutrientList: { 
+    gap: 10 
+  },
+  nutrientItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#F9FAFB', 
+    padding: 12, 
+    borderRadius: 12, 
+    gap: 12 
+  },
+  nutrientIconBg: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    backgroundColor: '#F0F9FF', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  nutrientLabel: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#1F2937' 
+  },
+  nutrientValue: { 
+    fontSize: 13, 
+    color: BRAND_COLOR, 
+    fontWeight: '700' 
+  },
+  typeBadge: { 
+    backgroundColor: '#F3F4F6', 
+    paddingHorizontal: 8, 
+    paddingVertical: 2, 
+    borderRadius: 6 
+  },
+  typeText: { 
+    fontSize: 10, 
+    fontWeight: '600', 
+    color: '#6B7280' 
+  },
+  priorityBadge: { 
+    paddingHorizontal: 10, 
+    paddingVertical: 6, 
+    borderRadius: 8, 
+    minWidth: 50, 
+    alignItems: 'center' 
+  },
+  priorityText: { 
+    fontSize: 11, 
+    fontWeight: '700' 
+  },
 });
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' },
-  heroSection: { marginBottom: 0 },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#F8F9FA' 
+  },
+  heroSection: { 
+    marginBottom: 0 
+  },
   heroBackground: {
     height: 140,
     backgroundColor: BRAND_COLOR,
@@ -48,48 +154,319 @@ export const styles = StyleSheet.create({
     overflow: 'hidden',
     justifyContent: 'center',
   },
-  decorativeCircle1: { position: 'absolute', width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.1)', top: -50, right: -40 },
-  decorativeCircle2: { position: 'absolute', width: 120, height: 120, borderRadius: 60, backgroundColor: 'rgba(255,255,255,0.08)', bottom: -20, left: -20 },
-  heroContent: { paddingHorizontal: 20, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', zIndex: 1 },
-  heroSubtitle: { fontSize: 14, color: 'rgba(255,255,255,0.9)', fontWeight: '600' },
-  heroTitle: { fontSize: 22, fontWeight: '800', color: '#FFFFFF' },
-  createHeaderBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255, 255, 255, 0.2)', paddingVertical: 8, paddingHorizontal: 12, borderRadius: 20, gap: 8 },
-  iconCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: '#FFFFFF', justifyContent: 'center', alignItems: 'center' },
-  createBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },
-  currentGoalCard: { backgroundColor: '#FFFFFF', marginHorizontal: 16, marginTop: -35, padding: 20, borderRadius: 20, elevation: 5, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12 },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
-  statusIconContainer: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F0F9FF', justifyContent: 'center', alignItems: 'center' },
-  statusLabel: { fontSize: 11, fontWeight: '700', color: '#6B7280', letterSpacing: 0.5, marginBottom: 4 },
-  goalTitle: { fontSize: 18, fontWeight: '800', color: '#1F2937' },
-  deleteIconButton: { width: 40, height: 40, borderRadius: 20, backgroundColor: '#FEF2F2', justifyContent: 'center', alignItems: 'center' },
-  validityBanner: { backgroundColor: '#F0F9FF', borderRadius: 16, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: '#BFDBFE' },
-  validityHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  validityLabel: { fontSize: 12, fontWeight: '700', color: '#6B7280' },
-  validityContent: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' },
-  validityValue: { fontSize: 28, fontWeight: '800', color: BRAND_COLOR },
-  validityDate: { fontSize: 12, color: '#9CA3AF', fontWeight: '600' },
-  metricsSection: { marginTop: 4 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: '#6B7280' },
-  metricBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9FAFB', padding: 14, borderRadius: 12, gap: 12 },
-  metricIconBg: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#EFF6FF', justifyContent: 'center', alignItems: 'center' },
-  metricName: { fontSize: 13, color: '#6B7280', fontWeight: '600' },
-  metricValue: { fontSize: 16, fontWeight: '800', color: '#1F2937' },
-  librarySection: { paddingHorizontal: 16 },
-  libraryHeader: { marginBottom: 16 },
-  libraryTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  libraryTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937' },
-  badge: { backgroundColor: BRAND_COLOR, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 4 },
-  badgeText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
-  tabCard: { backgroundColor: '#FFFFFF', borderRadius: 16, padding: 6, marginBottom: 16, elevation: 3 },
-  tabContainer: { flexDirection: 'row', gap: 6 },
-  tabItem: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, gap: 8 },
-  activeTabItem: { backgroundColor: BRAND_COLOR },
-  tabText: { fontSize: 14, fontWeight: '600', color: '#6B7280' },
-  activeTabText: { color: '#FFFFFF' },
-  cardsContainer: { marginTop: 4 },
- 
-  fab: { flexDirection: 'row', backgroundColor: BRAND_COLOR, paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16, alignItems: 'center', justifyContent: 'center', gap: 10, elevation: 8 },
-  fabText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  decorativeCircle1: { 
+    position: 'absolute', 
+    width: 200, 
+    height: 200, 
+    borderRadius: 100, 
+    backgroundColor: 'rgba(255,255,255,0.1)', 
+    top: -50, 
+    right: -40 
+  },
+  decorativeCircle2: { 
+    position: 'absolute', 
+    width: 120, 
+    height: 120, 
+    borderRadius: 60, 
+    backgroundColor: 'rgba(255,255,255,0.08)', 
+    bottom: -20, 
+    left: -20 
+  },
+  heroContent: { 
+    paddingHorizontal: 20, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    zIndex: 1 
+  },
+  heroSubtitle: { 
+    fontSize: 14, 
+    color: 'rgba(255,255,255,0.9)', 
+    fontWeight: '600' 
+  },
+  heroTitle: { 
+    fontSize: 22, 
+    fontWeight: '800', 
+    color: '#FFFFFF' 
+  },
+  createHeaderBtn: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', 
+    paddingVertical: 8, 
+    paddingHorizontal: 12, 
+    borderRadius: 20, 
+    gap: 8 
+  },
+  iconCircle: { 
+    width: 24, 
+    height: 24, 
+    borderRadius: 12, 
+    backgroundColor: '#FFFFFF', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  createBtnText: { 
+    color: '#FFFFFF', 
+    fontWeight: '700', 
+    fontSize: 13 
+  },
+
+  // Main Tab Switcher (Goal / History)
+  mainTabCard: { 
+    backgroundColor: '#FFFFFF', 
+    marginHorizontal: 16, 
+    marginTop: -30, 
+    borderRadius: 20, 
+    padding: 6, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 2 }, 
+    shadowOpacity: 0.08, 
+    shadowRadius: 8, 
+    elevation: 4, 
+    marginBottom: 16,
+  },
+  mainTabContainer: { 
+    flexDirection: 'row', 
+    gap: 6 
+  },
+  mainTabItem: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 12, 
+    borderRadius: 16, 
+    backgroundColor: 'transparent', 
+    gap: 8 
+  },
+  activeMainTabItem: { 
+    backgroundColor: BRAND_COLOR 
+  },
+  mainTabText: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#6B7280' 
+  },
+  activeMainTabText: { 
+    color: '#FFFFFF' 
+  },
+
+  currentGoalCard: { 
+    backgroundColor: '#FFFFFF', 
+    marginHorizontal: 16, 
+    padding: 20, 
+    borderRadius: 20, 
+    elevation: 5, 
+    marginBottom: 24, 
+    shadowColor: '#000', 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.1, 
+    shadowRadius: 12 
+  },
+  cardHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'flex-start', 
+    marginBottom: 16 
+  },
+  statusRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 12, 
+    flex: 1 
+  },
+  statusIconContainer: { 
+    width: 48, 
+    height: 48, 
+    borderRadius: 24, 
+    backgroundColor: '#F0F9FF', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  statusLabel: { 
+    fontSize: 11, 
+    fontWeight: '700', 
+    color: '#6B7280', 
+    letterSpacing: 0.5, 
+    marginBottom: 4 
+  },
+  goalTitle: { 
+    fontSize: 18, 
+    fontWeight: '800', 
+    color: '#1F2937' 
+  },
+  deleteIconButton: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    backgroundColor: '#FEF2F2', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  validityBanner: { 
+    backgroundColor: '#F0F9FF', 
+    borderRadius: 16, 
+    padding: 16, 
+    marginBottom: 16, 
+    borderWidth: 1, 
+    borderColor: '#BFDBFE' 
+  },
+  validityHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8, 
+    marginBottom: 8 
+  },
+  validityLabel: { 
+    fontSize: 12, 
+    fontWeight: '700', 
+    color: '#6B7280' 
+  },
+  validityContent: { 
+    flexDirection: 'row', 
+    alignItems: 'baseline', 
+    justifyContent: 'space-between' 
+  },
+  validityValue: { 
+    fontSize: 28, 
+    fontWeight: '800', 
+    color: BRAND_COLOR 
+  },
+  validityDate: { 
+    fontSize: 12, 
+    color: '#9CA3AF', 
+    fontWeight: '600' 
+  },
+  metricsSection: { 
+    marginTop: 4 
+  },
+  sectionHeader: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 8, 
+    marginBottom: 12 
+  },
+  sectionLabel: { 
+    fontSize: 11, 
+    fontWeight: '700', 
+    color: '#6B7280' 
+  },
+  metricBox: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#F9FAFB', 
+    padding: 14, 
+    borderRadius: 12, 
+    gap: 12 
+  },
+  metricIconBg: { 
+    width: 44, 
+    height: 44, 
+    borderRadius: 22, 
+    backgroundColor: '#F0F9FF', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  metricName: { 
+    fontSize: 13, 
+    color: '#6B7280', 
+    fontWeight: '600' 
+  },
+  metricValue: { 
+    fontSize: 16, 
+    fontWeight: '800', 
+    color: '#1F2937' 
+  },
+  metricTypeBadge: { 
+    backgroundColor: '#F3F4F6', 
+    paddingHorizontal: 8, 
+    paddingVertical: 3, 
+    borderRadius: 6 
+  },
+  metricTypeText: { 
+    fontSize: 10, 
+    fontWeight: '600', 
+    color: '#6B7280' 
+  },
+  librarySection: { 
+    paddingHorizontal: 16 
+  },
+  historySection: { 
+    paddingHorizontal: 16 
+  },
+  libraryHeader: { 
+    marginBottom: 16 
+  },
+  libraryTitleRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 10 
+  },
+  libraryTitle: { 
+    fontSize: 18, 
+    fontWeight: '700', 
+    color: '#1F2937' 
+  },
+  badge: { 
+    backgroundColor: BRAND_COLOR, 
+    borderRadius: 12, 
+    paddingHorizontal: 10, 
+    paddingVertical: 4 
+  },
+  badgeText: { 
+    color: '#FFFFFF', 
+    fontWeight: '700', 
+    fontSize: 12 
+  },
+  tabCard: { 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: 16, 
+    padding: 6, 
+    marginBottom: 16, 
+    elevation: 3 
+  },
+  tabContainer: { 
+    flexDirection: 'row', 
+    gap: 6 
+  },
+  tabItem: { 
+    flex: 1, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    paddingVertical: 12, 
+    borderRadius: 12, 
+    gap: 8 
+  },
+  activeTabItem: { 
+    backgroundColor: BRAND_COLOR 
+  },
+  tabText: { 
+    fontSize: 14, 
+    fontWeight: '600', 
+    color: '#6B7280' 
+  },
+  activeTabText: { 
+    color: '#FFFFFF' 
+  },
+  cardsContainer: { 
+    marginTop: 4 
+  },
+  fab: { 
+    flexDirection: 'row', 
+    backgroundColor: BRAND_COLOR, 
+    paddingVertical: 16, 
+    paddingHorizontal: 24, 
+    borderRadius: 16, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: 10, 
+    elevation: 8 
+  },
+  fabText: { 
+    color: '#FFFFFF', 
+    fontSize: 16, 
+    fontWeight: '700' 
+  },
 });

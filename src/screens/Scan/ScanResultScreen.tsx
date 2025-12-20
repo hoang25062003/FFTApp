@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation, useRoute, RouteProp, CommonActions } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import styles from './ScanResultScreenStyles';
 import { DetectedIngredientResponse } from '../../services/ScanService';
 import { ScanStackParamList } from '../../navigation/ScanStackNavigator';
@@ -79,32 +79,14 @@ const ScanResultScreen: React.FC = () => {
 
     const ingredientNames = selected.map(item => item.name);
     
-    // Tạo search query từ các nguyên liệu đã chọn
-    const searchQuery = ingredientNames.join(', ');
-    
-    // Navigate to Home screen with search parameters
-    navigation.dispatch(
-      CommonActions.reset({
-        index: 0,
-        routes: [
-          {
-            name: 'MainTabs',
-            state: {
-              routes: [
-                {
-                  name: 'Home',
-                  params: {
-                    searchQuery: searchQuery,
-                    ingredientNames: ingredientNames,
-                    fromScan: true,
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      })
-    );
+    // ✅ Navigate tới MainAppTabs (tên đúng trong RootNavigator)
+    navigation.getParent()?.getParent()?.navigate('MainAppTabs', {
+      screen: 'Home',
+      params: {
+        fromScan: true,
+        ingredientNames: ingredientNames,
+      },
+    });
   };
 
   const handleBackToScan = () => {

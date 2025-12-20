@@ -19,7 +19,6 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.fftapp.mobile",
-      "googleServicesFile": "./google-services.json",
       "edgeToEdgeEnabled": false,
       "softwareKeyboardLayoutMode": "pan",
       "predictiveBackGestureEnabled": false
